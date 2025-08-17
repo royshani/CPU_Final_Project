@@ -326,22 +326,22 @@ BEGIN
 		ELSIF (rising_edge(clock)) THEN
 			IF (INTR_STATE = "00") THEN
 				IF (INTR = '1') THEN
-					INTA_sig	<= '0';
+					INTA_sig	<= '0'; -- send ack to mcu
 					INTR_STATE	:= "01";
-					HOLD_PC		<= '1';
+					HOLD_PC		<= '1'; -- hold current pc
 					STATE <= '0';
 				END IF;
 				Read_ISR_PC	<= '0';
 				
 			ELSIF (INTR_STATE = "01") THEN		
-				INTA_sig	<= '1';
+				INTA_sig	<= '1'; 
 				INTR_STATE 	:= "10";
 				STATE <= '1';
 								
 			ELSE 
-				ISRAddr		<= read_data;
+				ISRAddr		<= read_data; -- get the ISR address from dmemory
 				INTR_STATE 	:= "00";
-				Read_ISR_PC	<= '1';
+				Read_ISR_PC	<= '1'; -- jump to ISR
 				HOLD_PC		<= '0';
 				STATE <= '0';
 			END IF;
@@ -356,7 +356,7 @@ BEGIN
 			
 		ELSIF (rising_edge(clock)) THEN
 			IF (INTR = '1') THEN
-				EPC	<= PC(9 DOWNTO 2);
+				EPC	<= PC(9 DOWNTO 2); -- save current pc
 			END IF;
 		END IF;
 	

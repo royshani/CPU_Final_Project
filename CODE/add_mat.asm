@@ -1,55 +1,104 @@
 .data
 
-Mat1:  	.word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-Mat2:	.word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-resMat: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0 , 0 , 0 , 0 , 0 , 0
-M:	.word 4
+arr1: .word  1 ,2 ,3 ,4 ,5 ,6 ,7 ,8 ,   
+arr2: .word  100,99,98,97,96,95,94,93,	      
+res1: .space 32  # SIZE*4=32[Byte] - ADD result array
+res2: .space 32  # SIZE*4=32[Byte] - SUB result array
+res3: .space 32  # SIZE*4=32[Byte] - MUL result array
+SIZE: .word  8
+
 
 .text
 main:
-la $a0, Mat1	# $a0 = address of Mat1
-la $a1, Mat2	# $a1 = address of Mat2
-la $a2, resMat	# $a2 = address of resMat
-lw $a3, M	# $a3 = matrix size 
-jal addMats	# Call addMats function
-
-j finish
-
-# Write to reg file for fpga memory debug
-#addi 	$t0, $0, 0
-#addi 	$t1, $0, 16
-#lw_loop:
-#beq	$t0, $t1, finish
-#mul	$t2, $t0, $a3
-#add 	$t2, $t2, $a2
-#lw	$t3, 0($t2)
-#addi	$t0, $t0, 1
-#j	lw_loop
-
-
-addMats:
-## Sums two matrixes $a0 and $a1 and put it in $a2
-addi	$s0, $0, 0	# element_bytes_pointer = 0
-addi 	$t0, $0, 4	# const of 4
-mul	$s1, $a3, $a3
-mul	$s1, $s1, $t0	# num_elements_bytes = 4*M*M
-
-add_loop:
-beq	$s0, $s1, done	# while element_bytes_pointer != num_elements_bytes
-add	$t0, $a0, $s0	# find Mat1 pointer with offset 
-add	$t1, $a1, $s0	# find Mat2 pointer with offset 
-add	$t2, $a2, $s0	# find resMat pointer with offset 
-
-lw	$t0, 0($t0)	# get Mat1 pointer value
-lw	$t1, 0($t1)	# get Mat2 pointer value
-add	$t3, $t1, $t0	
-sw	$t3, 0($t2)	# resMat[i] <=  Mat1[i]+Mat2[i]
-
-addi	$s0, $s0, 4	# next word
-j	add_loop
+	li $sp,0x01FC		# stack initial address is 200
+	lw $s0,SIZE($0)		# s0 = SIZE	
+	la $t1,arr1   		# t1 points to arr1
+	la $t2,arr2		# t2 points to arr2
+	la $s1,res1		# s1 points to res1
+	la $s2,res2		# s2 points to res2
+	la $s3,res3		# s3 points to res3
+loop:
+	addi $sp,$sp,-16
+	sw   $s0,12($sp)	# push SIZE
+	sw   $s1,8($sp)		# push res1 pointer
+	sw   $t2,4($sp)		# push arr2 pointer
+	sw   $t1,0($sp)		# push arr1 pointer
+	jal  mat_add
 	
-done: 
-jr	$ra	
-
-
-finish:
+	addi $sp,$sp,-16
+	sw   $s0,12($sp)	# push SIZE
+	sw   $s2,8($sp)		# push res2 pointer
+	sw   $t2,4($sp)		# push arr2 pointer
+	sw   $t1,0($sp)		# push arr1 pointer
+	jal  mat_sub
+	
+	addi $sp,$sp,-16
+	sw   $s0,12($sp)	# push SIZE
+	sw   $s3,8($sp)		# push res3 pointer
+	sw   $t2,4($sp)		# push arr2 pointer
+	sw   $t1,0($sp)		# push arr1 pointer
+	jal  mat_mul
+	
+finish:	beq $zero,$zero,finish	 
+#----------------------------------------------------------------------------------
+mat_add:  lw   $t6,12($sp)		# push SIZE  
+	  lw   $t5,8($sp)		# push res1 pointer
+	  lw   $t4,4($sp)		# push arr2 pointer
+	  lw   $t3,0($sp)		# push arr1 pointer
+	  
+add_l:	  lw   $t7,0($t3)
+	  lw   $t8,0($t4)
+	  lw   $t9,0($t5)
+	  
+	  add  $t0,$t7,$t8
+	  sw   $t0,0($t5)		# Mem[s1] = res1[i]= arr1[i]+arr2[i]
+	  
+	  addi $t3,$t3,4
+	  addi $t4,$t4,4
+	  addi $t5,$t5,4
+	  addi $t6,$t6,-1
+	  bne  $t6,$zero,add_l
+	  addi $sp,$sp,16
+	  jr   $ra
+#----------------------------------------------------------------------------------
+mat_sub:  lw   $t6,12($sp)		# push SIZE  
+	  lw   $t5,8($sp)		# push res2 pointer
+	  lw   $t4,4($sp)		# push arr2 pointer
+	  lw   $t3,0($sp)		# push arr1 pointer
+	  
+sub_l:	  lw   $t7,0($t3)
+	  lw   $t8,0($t4)
+	  lw   $t9,0($t5)
+	  
+	  sub  $t0,$t7,$t8
+	  sw   $t0,0($t5)		# Mem[s1] = res1[i]= arr1[i]-arr2[i]
+	  
+	  addi $t3,$t3,4
+	  addi $t4,$t4,4
+	  addi $t5,$t5,4
+	  addi $t6,$t6,-1
+	  bne  $t6,$zero,sub_l
+	  addi $sp,$sp,16
+	  jr   $ra
+#----------------------------------------------------------------------------------
+mat_mul:  lw   $t6,12($sp)		# push SIZE  
+	  lw   $t5,8($sp)		# push res3 pointer
+	  lw   $t4,4($sp)		# push arr2 pointer
+	  lw   $t3,0($sp)		# push arr1 pointer
+	  
+mul_l:	  lw   $t7,0($t3)
+	  lw   $t8,0($t4)
+	  lw   $t9,0($t5)
+	  
+	  mul  $t0,$t7,$t8
+	  sw   $t0,0($t5)		# Mem[s1] = res1[i]= arr1[i]*arr2[i]
+	  
+	  addi $t3,$t3,4
+	  addi $t4,$t4,4
+	  addi $t5,$t5,4
+	  addi $t6,$t6,-1
+	  bne  $t6,$zero,mul_l
+	  addi $sp,$sp,16
+	  jr   $ra
+#----------------------------------------------------------------------------------
+	  	  	  

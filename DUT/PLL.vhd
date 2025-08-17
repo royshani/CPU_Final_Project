@@ -138,9 +138,9 @@ BEGIN
 
 	altpll_component : altpll
 	GENERIC MAP (
-		clk0_divide_by => 50,
-		clk0_duty_cycle => 40,
-		clk0_multiply_by => 40,
+		clk0_divide_by => 2,
+		clk0_duty_cycle => 50,
+		clk0_multiply_by => 1,
 		clk0_phase_shift => "0",
 		compensate_clock => "CLK0",
 		gate_lock_signal => "NO",

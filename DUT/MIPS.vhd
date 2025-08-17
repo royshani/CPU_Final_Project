@@ -1,420 +1,367 @@
---------------- Top Level Structural Model for MIPS Processor Core
+
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_ARITH.ALL;
-USE IEEE.STD_LOGIC_SIGNED.ALL;
-use work.const_package.all;
-USE work.aux_package.ALL;
--------------- ENTITY --------------------
+
+-----------------------------------------
+-- Entity Declaration for MIPS
+-----------------------------------------
+
 ENTITY MIPS IS
-	GENERIC ( MemWidth : INTEGER := 10;
-			 ITCM_ADDR_WIDTH : INTEGER := 10;
-			 WORDS_NUM : INTEGER := 1024;
-			 SIM : BOOLEAN := FALSE);
-	PORT( rst_i, clk_i, ena					: IN 	STD_LOGIC;
-		BPADD								: IN  STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	GENERIC (	MemWidth 	: INTEGER := 10;
+				SIM 		: BOOLEAN := FALSE;
+				CtrlBusSize	: integer := 8;
+				AddrBusSize	: integer := 32;
+				DataBusSize	: integer := 32;
+				IOSize		: integer := 8
+			 );
+	PORT( reset					: IN 	STD_LOGIC; 
+	      clock					: IN 	STD_LOGIC; 
+		  ena					: IN 	STD_LOGIC; 
 		-- Output important signals to pins for easy display in Simulator
-		PC									: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		CLKCNT_o							: OUT  STD_LOGIC_VECTOR( 15 DOWNTO 0 );
-		STCNT_o								: OUT  STD_LOGIC_VECTOR( 7 DOWNTO 0 );
-		FHCNT_o								: OUT  STD_LOGIC_VECTOR( 7 DOWNTO 0 );
-		STRIGGER_o							: OUT  STD_LOGIC;
-		INSTCNT_o							: OUT  STD_LOGIC_VECTOR( 15 DOWNTO 0 );
-		IFpc_0								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		IFinstruction_o						: OUT  STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-		IDpc_0								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		IDinstruction_o						: OUT  STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-		EXpc_0								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		EXinstruction_o						: OUT  STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-		MEMpc_0								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		MEMinstruction_o					: OUT  STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-		WBpc_0								: OUT  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-		WBinstruction_o						: OUT  STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 )
-		);
+		PC					: buffer  STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+		ControlBus			: OUT	STD_LOGIC_VECTOR(CtrlBusSize-1 DOWNTO 0);
+		MemReadBus			: OUT 	STD_LOGIC;
+		MemWriteBus			: OUT 	STD_LOGIC;
+		AddressBus			: buffer	STD_LOGIC_VECTOR(AddrBusSize-1 DOWNTO 0);
+		GIE					: OUT	STD_LOGIC;
+		INTR				: IN	STD_LOGIC;
+		INTA				: OUT	STD_LOGIC;
+		INTR_Active			: IN	STD_LOGIC;
+		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
+		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
+		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
+		
 END 	MIPS;
------------- ARCHITECTURE ----------------
+----------------------------------------
+-- Architecture Definition
+----------------------------------------
 ARCHITECTURE structure OF MIPS IS
-	---- FPGA OR ModelSim Signals ----
-	SIGNAL dMemAddr_w 											: STD_LOGIC_VECTOR(MemWidth-1 DOWNTO 0);
-	SIGNAL rst_Sim_w, ena_Sim_w									: STD_LOGIC;
-	SIGNAL MCLK_w 												: STD_LOGIC;
 
--------------- Signals To support CPI/IPC calculation and break point debug ability --------------------------------
+	COMPONENT Ifetch
+		 GENERIC (MemWidth	: INTEGER;
+				  SIM 		: BOOLEAN);
 
-	SIGNAL BPADD_ena_w											: STD_LOGIC;
-	SIGNAL run_w												: STD_LOGIC;
-	SIGNAL pc_BPADD_w											: STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-	---------------- Pipeline Registers --------------------------
-	-- Forwarding logic
-	SIGNAL ForwardA_w, ForwardB_w								: STD_LOGIC_VECTOR(1 DOWNTO 0);
-	SIGNAL ID_ForwardA_w, ID_ForwardB_w							: STD_LOGIC; -- AD LEPO
-	
-	-- Hazard Logic -- Stall AND Flush
-	SIGNAL IFStall_w, IDStall_w, EXFlush_w 						: STD_LOGIC;
-	
-	--------------------------------------------------------
-	
-	-------- States Registers ------
-	-- Instruction Fetch
-	SIGNAL IF_PC_plus_4_w 										: STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL IF_IR_w  											: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL inst_cnt_w 											: STD_LOGIC_VECTOR(15 DOWNTO 0);
+   	     PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
+			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+        	SIGNAL PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			SIGNAL PC_plus_4_jr_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL Add_result 		: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			SIGNAL jump_address 	: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			SIGNAL Ainput    		: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL Branch 			: IN 	STD_LOGIC;
+			SIGNAL Branch_not_equal : IN 	STD_LOGIC;
+			SIGNAL jump_register    : IN 	STD_LOGIC;
+        	SIGNAL Zero 			: IN 	STD_LOGIC;
+			SIGNAL jump             : IN 	STD_LOGIC;
+      		SIGNAL PC_out 			: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL clock, reset 	: IN 	STD_LOGIC;
+			
+			SIGNAL INTA				: IN	STD_LOGIC;
+			SIGNAL Read_ISR_PC		: IN	STD_LOGIC;
+			SIGNAL HOLD_PC			: IN 	STD_LOGIC;
+			SIGNAL ISRAddr			: IN	STD_LOGIC_VECTOR(31 DOWNTO 0));
+	END COMPONENT; 
 
-	-- Instruction Decode
-	SIGNAL ID_PC_plus_4_w 										: STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL ID_IR_w 												: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL ID_read_data_1_w, ID_read_data_2_w 					: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL ID_Sign_extend_w 									: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL ID_Wr_reg_addr_0_w, ID_Wr_reg_addr_1_w 				: STD_LOGIC_VECTOR( 4 DOWNTO 0 );
-	SIGNAL ID_PCBranch_addr_w 									: STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL ID_JumpAddr_w     									: STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL ID_PCSrc_w        									: STD_LOGIC_VECTOR(1 DOWNTO 0);
-	SIGNAL ID_ALUOp_w											: STD_LOGIC_VECTOR(1 DOWNTO 0);			
-	SIGNAL ID_ALUSrc_w, ID_MemtoReg_w, ID_RegWrite_w, ID_jal_w	: STD_LOGIC;
-	SIGNAL ID_Branch_w, ID_MemWrite_w, ID_BranchBeq_w			: STD_LOGIC;
-	SIGNAL ID_BranchBne_w, ID_Jump_w,ID_MemRead_w				: STD_LOGIC;
-	SIGNAL ID_RegDst_w											: STD_LOGIC_VECTOR(1 DOWNTO 0);
-	-- Execute                                            
-	SIGNAL EX_ALUOp_w			 								: STD_LOGIC_VECTOR(1 DOWNTO 0);      
-	SIGNAL EX_ALUSrc_w, EX_Zero_w, EX_Branch_w, EX_MemWrite_w	: STD_LOGIC;
-	SIGNAL EX_MemRead_w, EX_BranchBeq_w,EX_BranchBne_w			: STD_LOGIC;
-	SIGNAL EX_Jump_w, EX_jal_w, EX_MemtoReg_w,EX_RegWrite_w		: STD_LOGIC;
-	SIGNAL EX_RegDst_w 											: STD_LOGIC_VECTOR(1 DOWNTO 0);
-	SIGNAL EX_PC_plus_4_w				      					: STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL EX_IR_w		    			  		 				: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 ); 
-	SIGNAL EX_read_data_1_w, EX_read_data_2_w 					: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL EX_Sign_extend_w				  		 				: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL EX_Wr_reg_addr_0_w, EX_Wr_reg_addr_1_w				: STD_LOGIC_VECTOR(4 DOWNTO 0);
-	SIGNAL EX_Wr_reg_addr_w 									: STD_LOGIC_VECTOR(4 DOWNTO 0);
-	SIGNAL EX_write_data_w 										: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0);
-	SIGNAL EX_ALU_Result_w 										: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0);
-	SIGNAL EX_Opcode_w 											: STD_LOGIC_VECTOR(5 DOWNTO 0);
-																
-	-- Memory     
-	
-	SIGNAL MEM_MemWrite_w 										: STD_LOGIC;
-	SIGNAL MEM_MemRead_w, MEM_jal_w 							: STD_LOGIC;
-	SIGNAL MEM_MemtoReg_w, MEM_RegWrite_w						: STD_LOGIC;
-	SIGNAL MEM_PC_plus_4_w 										: STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL MEM_ALU_Result_w 									: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0);
-	SIGNAL MEM_write_data_w, MEM_read_data_w 					: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0);
-	SIGNAL MEM_Wr_reg_addr_w 									: STD_LOGIC_VECTOR(4 DOWNTO 0);
+	COMPONENT Idecode IS
+	  PORT(	
+			read_data_1	: buffer 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			databus		: in 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			AddressBus		: in 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			read_data_2	: OUT 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			jump_address: OUT 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			Instruction : IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			Opcode      : IN 	STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+			read_data 	: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			ALU_result	: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			PC_PLUS_4	: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			PC_PLUS_4_jr: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			PC      	: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			RegWrite 	: IN 	STD_LOGIC;
+			MemtoReg 	: IN 	STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+			RegDst 		: IN 	STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+			Sign_extend : buffer 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			GIE			: OUT 	STD_LOGIC;
+			Read_ISR_PC	: IN	STD_LOGIC;
+			EPC			: IN	STD_LOGIC_VECTOR(7 DOWNTO 0);
+			INTR		: IN	STD_LOGIC;
+			INTR_Active	: IN	STD_LOGIC;
+			CLR_IRQ		: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
+			jump        : IN 	STD_LOGIC;
+			clock,reset, ena	: IN 	STD_LOGIC;
+			IFG			: IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+			IntrEn		: IN STD_LOGIC_VECTOR(6 DOWNTO 0)
+			);
+END COMPONENT;
 
-	
-	-- WriteBack
-	SIGNAL WB_MemtoReg_w, WB_RegWrite_w, WB_jal_w   			: STD_LOGIC;
-	SIGNAL WB_PC_plus_4_w				      						: STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL WB_read_data_w											: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL WB_ALU_Result_w										: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL WB_Wr_reg_addr_w										: STD_LOGIC_VECTOR( 4 DOWNTO 0 ); 
-	SIGNAL WB_write_data_w										: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	SIGNAL WB_write_data_mux_w									: STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0 );
-	------------------------------------------------------
+	COMPONENT control
+	      PORT( 	
+	Opcode 					: IN 	STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+	Funct        			: IN  STD_LOGIC_VECTOR(5 DOWNTO 0);
+	RegDst 					: OUT 	STD_LOGIC_VECTOR(1 DOWNTO 0);
+	ALUSrc 					: OUT 	STD_LOGIC;
+	MemtoReg 				: OUT 	STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+	RegWrite 				: OUT 	STD_LOGIC;
+	MemRead 				: OUT 	STD_LOGIC;
+	MemWrite 	            : OUT 	STD_LOGIC;
+	Branch 		            : OUT 	STD_LOGIC;
+	Branch_not_equal 		: OUT 	STD_LOGIC;
+	jump					: OUT 	STD_LOGIC;
+	jump_register			: OUT 	STD_LOGIC;
+	ALUop 				    : OUT 	STD_LOGIC_VECTOR( 3 DOWNTO 0 );
+	clock, reset			: IN 	STD_LOGIC;
+	STATE 				    : IN STD_LOGIC		);
+	END COMPONENT;
 
+	COMPONENT  Execute
+   	     PORT(	opcode           : IN  STD_LOGIC_VECTOR(5 DOWNTO 0);
+				Read_data_1 		: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+                Read_data_2 		: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+               	Sign_Extend 		: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+               	Function_opcode		: IN 	STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+               	ALUOp 				: IN 	STD_LOGIC_VECTOR( 3 DOWNTO 0 );
+               	ALUSrc 				: IN 	STD_LOGIC;
+               	Zero 				: OUT	STD_LOGIC;
+               	ALU_Result 			: buffer	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+               	Add_Result 			: OUT	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+               	PC_plus_4 			: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+               	clock, reset		: IN 	STD_LOGIC );
+	END COMPONENT;
+
+
+	COMPONENT dmemory
+	GENERIC (MemWidth	: INTEGER;
+			 SIM		: BOOLEAN);
+	PORT(	read_data 			: OUT 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+			is_ra 			    : in 	STD_LOGIC;	
+        	address 			: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+        	write_data 			: IN 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	   		MemRead, Memwrite 	: IN 	STD_LOGIC;
+            clock,reset, index_11, ena			: IN 	STD_LOGIC );
+	end COMPONENT;
+	-- declare signals used to connect VHDL components
+	
+	---- MCU BUS ----
+	
+	
+	SIGNAL PC_plus_4 		: STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+	SIGNAL read_data_1 		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL read_data_2 		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL Sign_Extend 		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL Add_result 		: STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	SIGNAL jump_address 	: STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	SIGNAL ALU_result 		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL read_data 		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL ALUSrc 			: STD_LOGIC;
+	SIGNAL Branch 			: STD_LOGIC;
+	SIGNAL Branch_not_equal : STD_LOGIC;
+	SIGNAL is_ra 			: STD_LOGIC := '0';  -- Initialized to '0'
+
+	SIGNAL jump 			: STD_LOGIC;
+	signal jump_register	: STD_LOGIC;
+	SIGNAL RegDst 			: STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+	SIGNAL Regwrite 		: STD_LOGIC;
+	SIGNAL Zero 			: STD_LOGIC;
+	SIGNAL MemWrite 		: STD_LOGIC;
+	SIGNAL MemtoReg 		: STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+	SIGNAL MemRead 			: STD_LOGIC;
+	SIGNAL ALUop 			: STD_LOGIC_VECTOR(3 DOWNTO 0 );
+	SIGNAL Instruction		: STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL PC_plus_4_jr_out : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+
+	-- Interrupt Signals
+	SIGNAL MemAddr												: STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL ISRAddr												: STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
+	SIGNAL EPC													: STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL INTA_sig												: STD_LOGIC;
+	SIGNAL Read_ISR_PC											: STD_LOGIC;
+	SIGNAL INTR_OneCycle										: STD_LOGIC;
+	SIGNAL HOLD_PC												: STD_LOGIC;
+	SIGNAL STATE 												: STD_LOGIC;
+	
+	
 BEGIN
-	-------------------------- FPGA or ModelSim -----------------------
-	rst_Sim_w 	<= rst_i WHEN SIM ELSE not rst_i;
-	ena_Sim_w		<= ena 	 WHEN SIM ELSE not ena;
-
-	G0:
-	if (not SIM) generate
-	  MCLK: PLL
-		PORT MAP (
-			inclk0 	=> clk_i,
-			c0 		=> MCLK_w
-		);
-	else generate
-		MCLK_w <= clk_i;
-	end generate;
-   --------------------- PORT MAP COMPONENTS --------------------------
-   ----- Instruction Fetch -----
-	IFE : Ifetch
-	GENERIC MAP(MemWidth => MemWidth, SIM => SIM, WORDS_NUM => WORDS_NUM, ITCM_ADDR_WIDTH => ITCM_ADDR_WIDTH) 
-	PORT MAP (	instruction_o => IF_IR_w,
-    	    	pc_plus4_o => IF_PC_plus_4_w,
-				add_result_i => ID_PCBranch_addr_w( 7 DOWNTO 0 ), 
-				PCSrc_i => ID_PCSrc_w,
-				pc_o => pc_BPADD_w,      
-				addr_res_o => ID_JumpAddr_w,
-				clk_i => MCLK_w, 
-				ena_i => ena_Sim_w,
-				Stall_IF_i => IFStall_w,
-				BPADD_ena_i => BPADD_ena_w,
-				inst_cnt_o => inst_cnt_w,
-				rst_i => rst_Sim_w );
-	----- Instruction Decode -----
-	ID : Idecode
-   	PORT MAP (	read_data1_o => ID_read_data_1_w,
-        		read_data2_o => ID_read_data_2_w,
-				rt_register_o => ID_Wr_reg_addr_0_w,
-				rd_register_o => ID_Wr_reg_addr_1_w,
-				write_register_address => WB_Wr_reg_addr_w,
-        		instruction_i => ID_IR_w,
-				PC_plus_4_shifted_i => ID_PC_plus_4_w(9 DOWNTO 2),
-				RegWrite_ctrl_i => WB_RegWrite_w,
-				ForwardA_ID => ID_ForwardA_w,
-				ForwardB_ID => ID_ForwardB_w,
-				BranchBeq_i => ID_BranchBeq_w,
-				BranchBne_i => ID_BranchBne_w,
-				Jump_i => ID_Jump_w,
-				JAL_i => ID_jal_w,
-				Stall_ID => IDStall_w,
-				write_data_i => WB_write_data_mux_w,
-				Branch_read_data_FW => MEM_ALU_Result_w,
-				sign_extend_o => ID_Sign_extend_w,
-				PCSrc_o => ID_PCSrc_w,
-				JumpAddr_o => ID_JumpAddr_w,
-				PCBranch_addr_o => ID_PCBranch_addr_w,
-        		clk_i => MCLK_w,  
-				rst_i => rst_Sim_w );
 	
-			
-	----- Control Unit in Instruction Decode -----
-	CTL:   control
-	PORT MAP (
-		opcode_i => ID_IR_w(31 DOWNTO 26),
-		funct_i => ID_IR_w(5 DOWNTO 0),
-		RegDst_ctrl_o => ID_RegDst_w,
-		ALUSrc_ctrl_o => ID_ALUSrc_w,
-		MemtoReg_ctrl_o => ID_MemtoReg_w,
-		RegWrite_ctrl_o => ID_RegWrite_w,
-		MemRead_ctrl_o => ID_MemRead_w,
-		MemWrite_ctrl_o => ID_MemWrite_w,
-		BranchBeq_o => ID_BranchBeq_w,
-		BranchBne_o => ID_BranchBne_w,
-		Jump_o => ID_Jump_w,
-		Jal_o => ID_jal_w,
-		ALUOp_ctrl_o => ID_ALUOp_w,
-		clock => MCLK_w,
-		reset => rst_Sim_w
-	);
-	----- Execute -----
-	EXE:  Execute
-   	PORT MAP (	Read_data1_i 	=> EX_read_data_1_w,
-             	Read_data2_i 	=> EX_read_data_2_w,
-				sign_extend_i	=> EX_Sign_extend_w,
-                funct_i			=> EX_Sign_extend_w( 5 DOWNTO 0 ),
-				opcode_i		=> EX_Opcode_w,
-				ALUOp_ctrl_i	=> EX_ALUOp_w,
-				ALUSrc_ctrl_i	=> EX_ALUSrc_w,
-				zero_o			=> EX_Zero_w,
-				RegDst			=> EX_RegDst_w,
-                alu_res_o		=> EX_ALU_Result_w,
-				pc_plus4_i		=> EX_PC_plus_4_w,
-				Wr_reg_addr     => EX_Wr_reg_addr_w,
-				Wr_reg_addr_0   => EX_Wr_reg_addr_0_w,
-				Wr_reg_addr_1   => EX_Wr_reg_addr_1_w,
-				Wr_data_FW_WB	=> WB_write_data_w,  
-				Wr_data_FW_MEM	=> MEM_ALU_Result_w, 
-				ForwardA		=> ForwardA_w,
-				ForwardB		=> ForwardB_w,
-				WriteData_EX    => EX_write_data_w
+   
+					-- connect the 5 MIPS components   
+  IFE : Ifetch
+	GENERIC MAP(MemWidth => MemWidth, SIM => SIM)
+	PORT MAP (	ena 			=> ena,
+				Instruction 	=> Instruction,
+    	    	PC_plus_4_out 	=> PC_plus_4,
+				PC_plus_4_jr_out => PC_plus_4_jr_out,
+				Add_result 		=> Add_result,
+				jump_address    => jump_address,
+				Branch 			=> Branch,
+				Branch_not_equal => Branch_not_equal,
+				jump_register   => jump_register,
+				jump            => jump,
+				Zero 			=> Zero,
+				Ainput          => read_data_1(9 DOWNTO 0),
+				PC_out 			=> PC,    
+				INTA 			=> INTA_sig,	
+				Read_ISR_PC     => Read_ISR_PC,
+				HOLD_PC         => HOLD_PC,
+				ISRAddr         => ISRAddr,
+				clock 			=> clock,  
+				reset 			=> reset );
+
+   ID : Idecode
+   	PORT MAP (	
+				read_data_1 	=> read_data_1,
+				ena             => ena,
+				databus			=> DataBus,
+				AddressBus		=> AddressBus,
+        		read_data_2 	=> read_data_2,
+				jump_address    => jump_address,
+        		Instruction 	=> Instruction,
+				Opcode 			=> Instruction( 31 DOWNTO 26 ),
+        		read_data 		=> read_data,
+				ALU_result 		=> ALU_result,
+				PC_PLUS_4       => PC_plus_4,
+				PC_plus_4_jr => PC_plus_4_jr_out,
+				PC              => PC,
+				RegWrite 		=> RegWrite,
+				MemtoReg 		=> MemtoReg,
+				RegDst 			=> RegDst,
+				Sign_extend 	=> Sign_extend,
+				GIE				=> GIE,
+				Read_ISR_PC		=> Read_ISR_PC,
+				EPC				=> EPC,
+				INTR			=> INTR,
+				INTR_Active		=> INTR_Active,
+				CLR_IRQ			=> CLR_IRQ,
+				jump			=> jump,
+        		clock 			=> clock,  
+				reset 			=> reset,
+				IFG				=> IFG,
+				IntrEn			=> IntrEn
 				);
+
+
+   CTL:   control
+	PORT MAP ( 	Opcode 			=> Instruction( 31 DOWNTO 26 ),
+				Funct           => Instruction( 5 DOWNTO 0 ),
+				RegDst 			=> RegDst,
+				ALUSrc 			=> ALUSrc,
+				MemtoReg 		=> MemtoReg,
+				RegWrite 		=> RegWrite,
+				MemRead 		=> MemRead,
+				MemWrite 		=> MemWrite,
+				Branch 			=> Branch,
+				jump_register   => jump_register,
+				Branch_not_equal => Branch_not_equal,
+				jump            => jump,
+				ALUop 			=> ALUop,
+                clock 			=> clock,
+				reset 			=> reset,
+				STATE		=> STATE 
+				);
+
+   EXE:  Execute
+   	PORT MAP (  Opcode 			=> Instruction( 31 DOWNTO 26 ),
+				Read_data_1 	=> read_data_1,
+             	Read_data_2 	=> read_data_2,
+				Sign_extend 	=> Sign_extend,
+                Function_opcode	=> Instruction( 5 DOWNTO 0 ),
+				ALUOp 			=> ALUop,
+				ALUSrc 			=> ALUSrc,
+				Zero 			=> Zero,
+                ALU_Result		=> ALU_Result,
+				Add_Result 		=> Add_Result,
+				PC_plus_4		=> PC_plus_4,
+                Clock			=> clock,
+				Reset			=> reset );
+
+   MEM:  dmemory
+    GENERIC MAP(MemWidth => MemWidth, SIM => SIM) 
+	PORT MAP (	read_data 		=> read_data,
+				ena             => ena,
+				is_ra           => is_ra,
+				address 		=> MemAddr,--jump memory address by 4
+				write_data 		=> read_data_2,
+				MemRead 		=> MemRead, 
+				Memwrite 		=> MemWrite, 
+                clock 			=> clock,  
+				reset 			=> reset,
+				index_11		=> MemAddr(11)	);
 				
-	----- Hazard Unit (Stalls AND Flushs AND Forwarding) -----
-	Hazard:	HazardUnit
-	PORT MAP(	
-				EX_MemtoReg_i		=> EX_MemtoReg_w,	
-				MEM_MemtoReg_i	=> MEM_MemtoReg_w,
-				EX_WriteReg_i		=> EX_Wr_reg_addr_w,
-				MEM_WriteReg_i   	=> MEM_Wr_reg_addr_w,
-				WB_WriteReg_i		=> WB_Wr_reg_addr_w,
-				EX_RegRs_w		=> EX_IR_w(25 DOWNTO 21),
-				EX_RegRt_w 		=> EX_IR_w(20 DOWNTO 16),
-				ID_RegRs_i		=> ID_IR_w(25 DOWNTO 21),
-				ID_RegRt_i 		=> ID_IR_w(20 DOWNTO 16),
-				EX_RegWr_i		=> EX_RegWrite_w,
-				MEM_RegWr_i   	=> MEM_RegWrite_w,
-				WB_RegWr_i		=> WB_RegWrite_w,
-				ID_BranchBeq_i	=> ID_BranchBeq_w,
-				ID_BranchBne_i	=> ID_BranchBne_w,
-				ID_Jump_i			=> ID_Jump_w,
-				IF_Stall_o        => IFStall_w,
-				ID_Stall_o        => IDStall_w,
-				Flush_EX        => EXFlush_w,
-				ForwardA_o    	=> ForwardA_w,
-				ForwardB_o		=> ForwardB_w,
-				ForwardA_Branch_o => ID_ForwardA_w,
-				ForwardB_Branch_o	=> ID_ForwardB_w				
-	);
-		
-	----- Data Memory -----
-	ModelSim: 
-		IF (SIM = TRUE) GENERATE
-				dMemAddr_w <= MEM_ALU_Result_w (9 DOWNTO 2);
-		END GENERATE ModelSim;
-		
-	FPGA: 
-		IF (SIM = FALSE) GENERATE
-				dMemAddr_w <= "00" & MEM_ALU_Result_w (9 DOWNTO 2);
-		END GENERATE FPGA;
+				
+	------ MCU ------
+	ControlBus		<= read_data_2(CtrlBusSize-1 DOWNTO 0) WHEN ALU_result(11 DOWNTO 0) = X"81C" ELSE -- BTCTL
+					   X"00";	 
+	MemReadBus		<= MemRead;
 	
-	MEM:  dmemory
-	GENERIC MAP(MemWidth => MemWidth,
-				WORDS_NUM => WORDS_NUM,
-				ITCM_ADDR_WIDTH => ITCM_ADDR_WIDTH) 
-	PORT MAP (	dtcm_data_rd_o => MEM_read_data_w,
-				dtcm_addr_i => dMemAddr_w,  --jump memory address by 4
-				dtcm_data_wr_i => MEM_write_data_w, 
-				MemRead_ctrl_i => MEM_MemRead_w, 
-				MemWrite_ctrl_i => MEM_MemWrite_w, 
-                clk_i => MCLK_w,  
-				rst_i => rst_Sim_w );
-	----- Write Back -----	
-	WB:	WRITE_BACK
-	PORT MAP(	
-				alu_result_i => WB_ALU_Result_w,
-				dtcm_data_rd_i => WB_read_data_w,
-				PC_plus_4_shifted_i => WB_PC_plus_4_w(9 DOWNTO 2),
-				MemtoReg_ctrl_i => WB_MemtoReg_w,
-				Jal_i => WB_jal_w,  
-				write_data_o => WB_write_data_w,
-				write_data_mux_o => WB_write_data_mux_w
-	);
+	MemWriteBus		<= MemWrite;
 	
-	---------------------------------------------------------------------------
-	------- PROCESS TO COUNT Clocks, Stalls, Flushs --------
-	PC		 	<= pc_BPADD_w;
-	BPADD_ena_w 	<= '1' WHEN ( SIM AND BPADD = pc_BPADD_w(9 DOWNTO 2) AND BPADD /= X"00") ELSE '0';
-	STRIGGER_o 	<= BPADD_ena_w;
+	AddressBus		<= X"00000" & ALU_result(11 DOWNTO 0) WHEN (MemRead = '1' OR MemWrite = '1')
+						ELSE (OTHERS => '0');
+						
+	DataBus			<= read_data_2 	WHEN (ALU_result(11) = '1' AND MemWrite = '1') ELSE 
+					   (OTHERS => 'Z');	-- GPIO OUTPUT
 	
-	PROCESS (MCLK_w, rst_Sim_w, ena_Sim_w, run_w, BPADD_ena_w, EXFlush_w, IDStall_w, IFStall_w) 
-		VARIABLE CLKCNT_sig		: STD_LOGIC_VECTOR( 15 DOWNTO 0 );
-		VARIABLE STCNT_sig		: STD_LOGIC_VECTOR( 7 DOWNTO 0 );
-		VARIABLE FHCNT_sig		: STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	MemAddr 		<= DataBus 	WHEN (INTA_sig = '0') ELSE 
+						ALU_result;
+						
+	is_ra           <= '1' WHEN ((Instruction(31 DOWNTO 26) = "101011" and Instruction(20 DOWNTO 16) = "11111") 
+						or(Instruction(31 DOWNTO 26) = "100011" and Instruction(20 DOWNTO 16) = "11111"))
+						ELSE '0';
+				
+	---------- INTERRUPT ----------
+	------ INTA and ISR Addr ------
+	INTA	<= INTA_sig;
+	
+	PROCESS (clock, INTR, reset)
+		VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
+
 	BEGIN
-		IF rst_Sim_w = '1' THEN
-			CLKCNT_sig  := X"0000";
-			STCNT_sig 	:= X"00";
-			FHCNT_sig 	:= X"00";
-			run_w			<= '0';
-		ELSIF (rising_edge(MCLK_w) and run_w = '1' and BPADD_ena_w = '0') THEN 	-- count clk counts on rising edge
-			CLKCNT_sig := CLKCNT_sig + 1;
-			IF (IDStall_w OR IFStall_w) = '1' THEN 	-- count on rising edge when stall occurs
-				STCNT_sig := STCNT_sig + 1;
-			END IF;
-			IF EXFlush_w = '1' THEN					-- count on rising edge when flush occurs
-				FHCNT_sig := FHCNT_sig + 1;
-			END IF;
-		END IF;
+		IF reset = '1' THEN
+			INTR_STATE 	:= "00";
+			INTA_sig 	<= '1';
+			Read_ISR_PC	<= '0';
+			HOLD_PC		<= '0';
+			STATE <= '0';
 		
-		IF BPADD_ena_w = '1' THEN -- if PC got to BreakPointAddr then pause
-			run_w			<= '0';
-		ELSIF ena_Sim_w = '1' THEN 
-			run_w			<= '1';
-		END IF;
-		------------- Signals To support CPI/IPC calculation -------------
-		CLKCNT_o 		<= CLKCNT_sig;
-		STCNT_o		<= STCNT_sig;
-		FHCNT_o		<= FHCNT_sig;
-	END PROCESS;
-
-
-
-
-	----------------------- Connect Pipeline Registers ------------------------
-	PROCESS BEGIN
-		WAIT UNTIL MCLK_w'EVENT AND MCLK_w = '1';
-		IF  (run_w = '1' AND BPADD_ena_w = '0') THEN
-			-------------- Instruction Fetch TO Instruction Decode ---------------- 
-			IF IDStall_w = '0' THEN 
-				ID_PC_plus_4_w <= IF_PC_plus_4_w;
-				ID_IR_w <= IF_IR_w;		
-			END IF;
-			IF (ID_PCSrc_w(0) = '1' OR ID_PCSrc_w(1) = '1')  THEN -- CLR IF_ID
-				ID_PC_plus_4_w <= "0000000000";
-				ID_IR_w 		 <= X"00000000";			
-			END IF;
-			-------------------- Instruction Decode TO Execute -------------------- 
-			IF EXFlush_w = '1' THEN -- CLR ID_IF register
-				----- Control Reg ----
-				EX_Branch_w 	     <= '0';
-				EX_MemtoReg_w      <= '0';
-				EX_RegWrite_w      <= '0';
-				EX_MemWrite_w      <= '0';
-				EX_MemRead_w	     <= '0';
-				EX_RegDst_w 	     <= "00";  
-				EX_ALUSrc_w	     <= '0';
-				EX_ALUOp_w 	     <= "00";
-				EX_Opcode_w		 <= "000000";
-				EX_BranchBeq_w	 <= '0';
-				EX_BranchBne_w	 <= '0';
-				EX_Jump_w			 <= '0';
-				EX_jal_w			 <= '0';   
-				----- State Reg -----
-				EX_PC_plus_4_w     <= "0000000000";
-				EX_IR_w			 <= X"00000000";
-				EX_read_data_1_w   <= X"00000000";
-				EX_read_data_2_w   <= X"00000000";
-				EX_Sign_extend_w   <= X"00000000";
-				EX_Wr_reg_addr_0_w <= "00000";
-				EX_Wr_reg_addr_1_w <= "00000";
+		ELSIF (rising_edge(clock)) THEN
+			IF (INTR_STATE = "00") THEN
+				IF (INTR = '1') THEN
+					INTA_sig	<= '0';
+					INTR_STATE	:= "01";
+					HOLD_PC		<= '1';
+					STATE <= '0';
+				END IF;
+				Read_ISR_PC	<= '0';
+				
+			ELSIF (INTR_STATE = "01") THEN		
+				INTA_sig	<= '1';
+				INTR_STATE 	:= "10";
+				STATE <= '1';
+								
 			ELSE 
-				----- Control Reg -----
-				EX_Branch_w 	     <= ID_Branch_w;
-				EX_MemtoReg_w      <= ID_MemtoReg_w;
-				EX_RegWrite_w      <= ID_RegWrite_w;
-				EX_MemWrite_w      <= ID_MemWrite_w;
-				EX_MemRead_w	     <= ID_MemRead_w;		
-				EX_RegDst_w 	     <= ID_RegDst_w;
-				EX_ALUSrc_w	     <= ID_ALUSrc_w;
-				EX_ALUOp_w 	     <= ID_ALUOp_w;
-				EX_Opcode_w		 <= ID_IR_w(31 DOWNTO 26);
-				EX_BranchBeq_w	 <= ID_BranchBeq_w;
-				EX_BranchBne_w	 <= ID_BranchBne_w;
-				EX_Jump_w			 <= ID_Jump_w;
-				EX_jal_w			 <= ID_jal_w;   
-				----- State Reg -----
-				EX_PC_plus_4_w     <= ID_PC_plus_4_w;	
-				EX_IR_w			 <= ID_IR_w;
-				EX_read_data_1_w   <= ID_read_data_1_w;  -- rs
-				EX_read_data_2_w   <= ID_read_data_2_w;	 -- rt
-				EX_Sign_extend_w   <= ID_Sign_extend_w;
-				EX_Wr_reg_addr_0_w <= ID_Wr_reg_addr_0_w;
-				EX_Wr_reg_addr_1_w <= ID_Wr_reg_addr_1_w;
+				ISRAddr		<= read_data;
+				INTR_STATE 	:= "00";
+				Read_ISR_PC	<= '1';
+				HOLD_PC		<= '0';
+				STATE <= '0';
 			END IF;
-			
-			-------------------------- Execute TO Memory --------------------------- 
-			----- Control Reg -----
-			MEM_MemtoReg_w    <= EX_MemtoReg_w;
-			MEM_RegWrite_w    <= EX_RegWrite_w;
-			MEM_MemWrite_w    <= EX_MemWrite_w;
-			MEM_MemRead_w	    <= EX_MemRead_w;	
-			
-
-			MEM_jal_w			<= EX_jal_w;
-			----- State Reg -----
-			MEM_PC_plus_4_w	<= EX_PC_plus_4_w;
-	
-			MEM_ALU_Result_w  <= EX_ALU_Result_w;
-			MEM_write_data_w	<= EX_write_data_w;   
-			MEM_Wr_reg_addr_w	<= EX_Wr_reg_addr_w;
-
-			
-			------------------------- Memory TO WriteBack ------------------------- 
-			----- Control Reg -----
-			WB_MemtoReg_w		<= MEM_MemtoReg_w;
-			WB_RegWrite_w		<= MEM_RegWrite_w;
-			WB_jal_w			<= MEM_jal_w;
-			
-			----- State Reg -----
-			WB_PC_plus_4_w	<= MEM_PC_plus_4_w;
-			WB_read_data_w	<= MEM_read_data_w;
-			WB_ALU_Result_w	<= MEM_ALU_Result_w;
-			WB_Wr_reg_addr_w	<= MEM_Wr_reg_addr_w;
-		END IF;
 		
-	END PROCESS;		
-	---------------------------------------------------------------------------
-	INSTCNT_o <= inst_cnt_w;
-	IFpc_0 <= IF_PC_plus_4_w-4;
-	IFinstruction_o <= IF_IR_w;
-	IDpc_0 <= ID_PC_plus_4_w-4;
-	IDinstruction_o <= ID_IR_w;
-	EXpc_0 <= EX_PC_plus_4_w-4;
-	EXinstruction_o <= EX_IR_w;
-	MEMpc_0 <= MEM_PC_plus_4_w-4;
-	MEMinstruction_o <= EX_IR_w;
-	WBpc_0 <= WB_PC_plus_4_w-4;
-	WBinstruction_o <= EX_IR_w;
+		END IF;
+	END PROCESS;
+	
+	------ EPC (Exception Program Counter) PROCESS ------
+	PROCESS (clock, INTR, reset) BEGIN	
+		IF reset = '1' THEN
+			EPC	<= (OTHERS => '0');
+			
+		ELSIF (rising_edge(clock)) THEN
+			IF (INTR = '1') THEN
+				EPC	<= PC(9 DOWNTO 2);
+			END IF;
+		END IF;
+	
+	END PROCESS;
+	
+	
 END structure;
+

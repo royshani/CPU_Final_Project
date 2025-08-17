@@ -1,70 +1,71 @@
------------- Control module (implements MIPS control unit)------------------
+		-- control module (implements MIPS control unit)
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_ARITH.ALL;
 USE IEEE.STD_LOGIC_SIGNED.ALL;
-USE work.const_package.all;
------------- Entity -----------------
+-----------------------------------------
+-- Entity Declaration for control
+-----------------------------------------
 ENTITY control IS
    PORT( 	
-		opcode_i 			: IN 	STD_LOGIC_VECTOR(5 DOWNTO 0);
-		funct_i			: IN 	STD_LOGIC_VECTOR(5 DOWNTO 0);
-		RegDst_ctrl_o 		: OUT 	STD_LOGIC_VECTOR(1 DOWNTO 0);
-		ALUSrc_ctrl_o 		: OUT 	STD_LOGIC;
-		MemtoReg_ctrl_o 	: OUT 	STD_LOGIC;
-		RegWrite_ctrl_o 	: OUT 	STD_LOGIC;
-		MemRead_ctrl_o 	: OUT 	STD_LOGIC;
-		MemWrite_ctrl_o 	: OUT 	STD_LOGIC;
-		BranchBeq_o 		: OUT 	STD_LOGIC;
-		BranchBne_o 		: OUT 	STD_LOGIC;
-		Jump_o			: OUT 	STD_LOGIC;
-		Jal_o				: OUT 	STD_LOGIC;
-		ALUOp_ctrl_o 		: OUT 	STD_LOGIC_VECTOR( 1 DOWNTO 0 );
-		clock, reset	: IN 	STD_LOGIC );
+	Opcode 					: IN 	STD_LOGIC_VECTOR( 5 DOWNTO 0 );
+	Funct        			: IN  STD_LOGIC_VECTOR(5 DOWNTO 0);
+	RegDst 					: OUT 	STD_LOGIC_VECTOR(1 DOWNTO 0);
+	ALUSrc 					: OUT 	STD_LOGIC;
+	MemtoReg 				: OUT 	STD_LOGIC_VECTOR( 1 DOWNTO 0 );
+	RegWrite 				: OUT 	STD_LOGIC;
+	MemRead 				: OUT 	STD_LOGIC;
+	MemWrite 	            : OUT 	STD_LOGIC;
+	Branch 		            : OUT 	STD_LOGIC;
+	Branch_not_equal 		: OUT 	STD_LOGIC;
+	jump					: OUT 	STD_LOGIC;
+	jump_register			: OUT 	STD_LOGIC;
+	ALUop 				    : OUT 	STD_LOGIC_VECTOR( 3 DOWNTO 0 );
+	clock, reset			: IN 	STD_LOGIC;
+	STATE 				    : IN STD_LOGIC		);
+
 END control;
------------- Architecture -----------------
+----------------------------------------
+-- Architecture Definition
+----------------------------------------
 ARCHITECTURE behavior OF control IS
-	SIGNAL  rtype_w, itype_imm_w, lw_w, sw_w, beq_w, Bne_w, Addi_w, Ori_w, Xori_w, Andi_w, Shift_w, Lui_w, Slti_w, JalSignal_w : STD_LOGIC;
-	-- Add Relvant Signals Later if needed
+
+	SIGNAL  R_format, Lw, Sw, Beq, Addi, Andi, ori, xori, bne, slti, lui, jmp, jr, jal, mul : STD_LOGIC;
+
 BEGIN           
-------- Code to generate control signals using opcode bits -------------
-	
-	-- OPcode Decoder --
-	rtype_w 	<=  '1' WHEN opcode_i = "000000" OR opcode_i = "011100" ELSE '0';
-	lw_w          <=  '1' WHEN opcode_i = "100011" ELSE '0';
- 	sw_w          <=  '1' WHEN opcode_i = "101011" ELSE '0';
-   	beq_w         <=  '1' WHEN opcode_i = "000100" ELSE '0';
-	Bne_w		<=	'1' WHEN opcode_i = "000101" ELSE '0';
-	Addi_w		<=  '1' WHEN opcode_i = "001000" ELSE '0';
-	Andi_w 		<=  '1' WHEN opcode_i = "001100" ELSE '0';
-	Slti_w		<= 	'1' WHEN opcode_i = "001010" ELSE '0';
-	Ori_w		<=  '1' WHEN opcode_i = "001101" ELSE '0';
-	Xori_w		<=  '1' WHEN opcode_i = "001110" ELSE '0';
-	Lui_w		<=	'1' WHEN opcode_i = "001111" ELSE '0';
-	JalSignal_w	<=	'1' WHEN opcode_i = "000011" ELSE '0';
-	Jump_o		<=	'1' WHEN opcode_i = "000010" OR opcode_i = "000011" OR (opcode_i = "000000" AND funct_i = "001000") ELSE '0';
-	Shift_w		<=  '1' WHEN opcode_i = "000000" AND (funct_i = "000000" OR funct_i = "000010") ELSE '0';
+				-- Code to generate control signals using opcode bits
+	R_format 	<=  '1'  WHEN  Opcode = "000000"  ELSE '0';
+	Lw          <=  '1'  WHEN  Opcode = "100011"  ELSE '0';
+ 	Sw          <=  '1'  WHEN  Opcode = "101011"  ELSE '0';
+   	Beq         <=  '1'  WHEN  Opcode = "000100"  ELSE '0';
+	Addi        <=  '1'  WHEN  Opcode  = "001000"  ELSE '0'; 
+	Andi        <=  '1'  WHEN  Opcode  = "001100"  ELSE '0';
+	ori         <=  '1'  WHEN  Opcode  = "001101"  ELSE '0';
+	xori        <=  '1'  WHEN  Opcode  = "001110"  ELSE '0';	
+	slti        <=  '1'  WHEN  Opcode  = "001010"  ELSE '0';
+	lui         <=  '1'  WHEN  Opcode  = "001111"  ELSE '0';
+	jmp         <=  '1'  WHEN  Opcode  = "000010"  ELSE '0';
+	jal         <=  '1'  WHEN  Opcode  = "000011"  ELSE '0';
+	mul         <=  '1'  WHEN  Opcode  = "011100"  ELSE '0';
+	bne         <=  '1'  WHEN  Opcode  = "000101"  ELSE '0';
+	Jr          <=  '1' WHEN (Opcode = "000000" AND Funct = "001000") ELSE '0';
+	RegDst(1)   <=  jal;
+  	RegDst(0)   <=  R_format or mul;
+ 	ALUSrc  	<=  Lw OR Sw or Addi or Andi  or ori or xori or slti or lui;
+	MemtoReg(1) 	<=  jal;
+	MemtoReg(0) 	<=  Lw;
+  	RegWrite 	<=  (R_format OR Lw OR Addi or Andi or ori or xori or slti or lui or jal or mul) and (not jr);
+  	MemRead 	<=  Lw;
+   	MemWrite 	<=  '1' WHEN (Sw = '1' OR STATE = '1') ELSE '0'; 
+ 	Branch      <=  Beq;
+	Branch_not_equal <= bne;
+	jump        <= jmp or jal;
+	jump_register <= jr;
+	ALUOp( 3 )	<=  mul;
+	ALUOp( 2 ) 	<=  Addi or sw or lw or ori or slti;
+	ALUOp( 1 ) 	<=  R_format or Addi or Andi or sw or lw or slti or lui;
+	ALUOp( 0 ) 	<=  Beq or Andi or ori or bne or slti; 
 
-	-- EXEC -- 
-	itype_imm_w <= Addi_w OR Andi_w OR Ori_w OR Xori_w OR Lui_w OR Shift_w or Slti_w;
-	RegDst_ctrl_o(1)	<= JalSignal_w; -- jal
-	RegDst_ctrl_o(0)  	<= rtype_w;
-	ALUSrc_ctrl_o   	<= lw_w OR sw_w OR itype_imm_w;
-	ALUOp_ctrl_o(1) 	<= rtype_w;
-	ALUOp_ctrl_o(0) 	<= beq_w OR Bne_w OR Shift_w; 
-
-		-- MEM -- 
-	MemRead_ctrl_o    <= lw_w;
-   	MemWrite_ctrl_o   <= sw_w; 
- 	BranchBeq_o   <= beq_w;
-	BranchBne_o	<= Bne_w;
-	Jal_o 		<= JalSignal_w;
-	
-	-- WB --
-	MemtoReg_ctrl_o   <= lw_w;
-  	RegWrite_ctrl_o   <= rtype_w OR lw_w OR itype_imm_w OR JalSignal_w;
-
-
-END behavior;
+   END behavior;
 
 

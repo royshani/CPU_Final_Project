@@ -1,123 +1,119 @@
--------- Ifetch module (provides the PC and instruction memory for the MIPS computer)
+-- Ifetch module (provides the PC and instruction 
+--memory for the MIPS computer)
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_ARITH.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
-USE work.const_package.all;
 LIBRARY altera_mf;
 USE altera_mf.altera_mf_components.all;
-
----------------- ENTITY ------------------
+-----------------------------------------
+-- Entity Declaration for Ifetch
+-----------------------------------------
 ENTITY Ifetch IS
-	GENERIC (
-		MemWidth         : INTEGER;
-		SIM              : BOOLEAN := FALSE;
-		PC_WIDTH         : INTEGER := 10;
-		NEXT_PC_WIDTH    : INTEGER := 8;  -- NEXT_PC_WIDTH = PC_WIDTH - 2
-		ITCM_ADDR_WIDTH  : INTEGER ;
-		WORDS_NUM        : INTEGER ;
-		INST_CNT_WIDTH   : INTEGER := 16
-	);
-	PORT (
-		instruction_o     : OUT STD_LOGIC_VECTOR(DATA_BUS_WIDTH-1 DOWNTO 0);
-		pc_plus4_o        : OUT STD_LOGIC_VECTOR(9 DOWNTO 0);
-		add_result_i      : IN  STD_LOGIC_VECTOR(7 DOWNTO 0);
-		PCSrc_i           : IN  STD_LOGIC_VECTOR(1 DOWNTO 0);
-		pc_o              : OUT STD_LOGIC_VECTOR(9 DOWNTO 0);
-		addr_res_o        : IN  STD_LOGIC_VECTOR(7 DOWNTO 0);
-		clk_i             : IN  STD_LOGIC;
-		ena_i             : IN  STD_LOGIC;
-		Stall_IF_i        : IN  STD_LOGIC;
-		BPADD_ena_i       : IN  STD_LOGIC;
-		rst_i             : IN  STD_LOGIC;
-		inst_cnt_o        : OUT STD_LOGIC_VECTOR(INST_CNT_WIDTH-1 DOWNTO 0)
-	);
+	GENERIC (MemWidth	: INTEGER;
+			 SIM 		: BOOLEAN);
+	PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
+			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+        	SIGNAL PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			SIGNAL PC_plus_4_jr_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL Add_result 		: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			SIGNAL jump_address 	: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			SIGNAL Ainput    		: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL Branch 			: IN 	STD_LOGIC;
+			SIGNAL Branch_not_equal : IN 	STD_LOGIC;
+			SIGNAL jump_register    : IN 	STD_LOGIC;
+        	SIGNAL Zero 			: IN 	STD_LOGIC;
+			SIGNAL jump             : IN 	STD_LOGIC;
+      		SIGNAL PC_out 			: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	SIGNAL clock, reset 	: IN 	STD_LOGIC;
+			
+			SIGNAL INTA				: IN	STD_LOGIC;
+			SIGNAL Read_ISR_PC		: IN	STD_LOGIC;
+			SIGNAL HOLD_PC			: IN 	STD_LOGIC;
+			SIGNAL ISRAddr			: IN	STD_LOGIC_VECTOR(31 DOWNTO 0));
 END Ifetch;
-
---------------- ARCHITECTURE --------------
+----------------------------------------
+-- Architecture Definition
+----------------------------------------
 ARCHITECTURE behavior OF Ifetch IS
-
-	SIGNAL pc_q, pc_plus4_r   : STD_LOGIC_VECTOR(9 DOWNTO 0);
-	SIGNAL next_pc_w          : STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL itcm_addr_w        : STD_LOGIC_VECTOR(MemWidth-1 DOWNTO 0);
-	SIGNAL ifetch_clock       : STD_LOGIC;  -- new signal name we made for falling edge
-	SIGNAL inst_cnt_q         : STD_LOGIC_VECTOR(INST_CNT_WIDTH-1 DOWNTO 0);
-
+	SIGNAL instruction_temp  : STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+	SIGNAL PC, PC_plus_4 , 	PC_plus_4_jr : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+	SIGNAL Mem_Addr 		 : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+	SIGNAL Next_PC           : STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	SIGNAL f_clk  : STD_LOGIC;
 BEGIN
-
-	--------------- ROM for Instruction Memory ---------------
-	inst_memory: altsyncram
+						--ROM for Instruction Memory
+inst_memory: altsyncram
+	
 	GENERIC MAP (
 		operation_mode => "ROM",
-		width_a => DATA_BUS_WIDTH,
-		widthad_a => MemWidth,
-		numwords_a => WORDS_NUM,
+		width_a => 32,
+		widthad_a => 10,
+		numwords_a => 1024,
 		lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
-		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Lab5\CPU5_new\CODE\ITCM.hex",
+		init_file => "C:\hanan\CPU\FinalProject\check\ITCM.hex",
 		intended_device_family => "Cyclone"
 	)
-		PORT MAP (
-			clock0     => ifetch_clock,  -- Falling Edge
-			address_a  => itcm_addr_w,
-			q_a        => instruction_o
-		);
-
-	--------------------------------------------------------------
-	ifetch_clock <= NOT clk_i;
-
-	--------- Instructions always start on word address - not byte -------
-	pc_q(1 DOWNTO 0) <= "00";
-
-	--------- Copy output signals - allows read inside module -----------
-	pc_o        <= pc_q;
-	pc_plus4_o  <= pc_plus4_r;
-
-	---------- Send address to inst. memory address register ------------
-	ModelSim:
+	PORT MAP (
+		clock0     => f_clk,
+		address_a 	=> Mem_Addr, 
+		q_a 			=> instruction_temp );
+		
+					-- Instructions always start on word address - not byte
+		PC(1 DOWNTO 0) <= "00";
+		
+					-- copy output signals - allows read inside module
+		PC_out 			<= PC;
+		PC_plus_4_out 	<= PC_plus_4;
+		PC_plus_4_jr_out    <= PC_plus_4_jr;
+		f_clk <= not clock;
+						-- send address to inst. memory address register
+		------------------------------------------------------------------
+		ModelSim: 
 		IF (SIM = TRUE) GENERATE
-			itcm_addr_w <= pc_q(9 DOWNTO 2);
+				Mem_Addr <= PC( 9 DOWNTO 2 );
 		END GENERATE ModelSim;
-
-	FPGA:
+		
+		FPGA: 
 		IF (SIM = FALSE) GENERATE
-			itcm_addr_w <= pc_q(9 DOWNTO 2) & "00";  -- Use word address for word-by-word access
+				Mem_Addr <= PC;
 		END GENERATE FPGA;
+		------------------------------------------------------------------
+		
+		
 
-	---------- Adder to increment PC by 4 ----------------------       
-	pc_plus4_r(9 DOWNTO 2) <= pc_q(9 DOWNTO 2) + 1;
-	pc_plus4_r(1 DOWNTO 0) <= "00";
-
-	---------- Mux to select Branch Address or PC + 4 -----------       
-	next_pc_w <=  X"00"         WHEN rst_i = '1'            ELSE
-	              add_result_i  WHEN PCSrc_i = "01"         ELSE   -- branch
-	              addr_res_o    WHEN PCSrc_i = "10"         ELSE   -- jump
-	              pc_plus4_r(9 DOWNTO 2);
-
-	---------- PC Process (CLK on rising edge) --------------
+						-- Adder to increment PC by 4        
+      	PC_plus_4( 9 DOWNTO 2 )  <= PC( 9 DOWNTO 2 ) + 1;
+       	PC_plus_4( 1 DOWNTO 0 )  <= "00";
+		
+		PC_plus_4_jr <= PC_plus_4 when clock = '0' else unaffected;
+		
+		------------------------------------------------------------------
+		
+						-- Mux to select Branch Address or PC + 4        
+		Next_PC  <= X"00" WHEN Reset = '1' ELSE
+					ISRAddr(9 DOWNTO 2)	WHEN Read_ISR_PC = '1'	ELSE	-- Interrupt!
+					jump_address WHEN ((jump = '1' or jump_register = '1') and Read_ISR_PC = '0') ELSE --jump\jal
+					Add_result  WHEN ( ( Branch = '1' ) AND ( Zero = '1' ) ) ELSE   --beq
+					Add_result  WHEN ( ( Branch_not_equal = '1' ) AND ( Zero = '0' ) ) ELSE  --bne
+					PC_plus_4( 9 DOWNTO 2 );
+		
+		
+			
+		instruction <= instruction_temp;
+		
 	PROCESS
-	BEGIN
-		WAIT UNTIL (clk_i'EVENT) AND (clk_i = '1');
-		IF rst_i = '1' THEN
-			pc_q(9 DOWNTO 2) <= "00000000";
-		ELSIF (ena_i = '1' AND Stall_IF_i = '0' AND BPADD_ena_i = '0') THEN
-			pc_q(9 DOWNTO 2) <= next_pc_w;
-		END IF;
-	END PROCESS;
-
-	------------ Instruction Count Process -------------
-	PROCESS (clk_i, rst_i)
-	BEGIN
-		IF rst_i = '1' THEN
-			inst_cnt_q <= (OTHERS => '0');
-		ELSIF RISING_EDGE(clk_i) THEN
-			IF (ena_i = '1' AND Stall_IF_i = '0' AND BPADD_ena_i = '0') THEN
-				inst_cnt_q <= inst_cnt_q + '1';
+		BEGIN
+		
+			WAIT UNTIL ( clock'EVENT ) AND ( clock = '1' );
+			IF reset = '1' THEN
+				   PC( 9 DOWNTO 2) <= "00000000" ; 
+			ELSIF (HOLD_PC = '0' and ena = '1') THEN 
+				   PC( 9 DOWNTO 2 ) <= Next_PC;
 			END IF;
-		END IF;
 	END PROCESS;
-
-	inst_cnt_o <= inst_cnt_q;
-
 END behavior;
+
+

@@ -68,9 +68,9 @@ BEGIN
       Switches <= X"00";
       WAIT FOR 10000 ns;
       WHILE TRUE LOOP
-         Switches <= X"69";
+         Switches <= X"01";
          WAIT FOR 20000 ns;
-         Switches <= X"42";
+         Switches <= X"02";
          WAIT FOR 20000 ns;
       END LOOP;
    END PROCESS switch_toggle_proc;

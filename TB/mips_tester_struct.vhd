@@ -51,28 +51,66 @@ BEGIN
 
    ena	 <= '1';
    reset <= mw_U_1pulse;
+   --reset <= '0';
    u_1pulse_proc: PROCESS
    BEGIN
       mw_U_1pulse <= 
          '0',
-         '1' AFTER 20 ns,
-         '0' AFTER 120 ns;
-
+         '1' AFTER 50 ns,
+         '0' AFTER 10000 ns;
       WAIT;
     END PROCESS u_1pulse_proc;
 
 
-   Switches <= X"A5";
+   -- Toggle Switches between 0x00 and 0x01 every 20000 ns
+   switch_toggle_proc: PROCESS
+   BEGIN
+      Switches <= X"00";
+      WAIT FOR 10000 ns;
+      WHILE TRUE LOOP
+         Switches <= X"69";
+         WAIT FOR 20000 ns;
+         Switches <= X"42";
+         WAIT FOR 20000 ns;
+      END LOOP;
+   END PROCESS switch_toggle_proc;
 
  
   inter_key1_proc: PROCESS
   BEGIN
-        KEY1 <= 
-        '1',
-        '0' AFTER 20000 ns,
-        '1' AFTER 20100 ns;
-       WAIT;
+        KEY1 <= '1';
+        WAIT FOR 10000 ns;
+        WHILE TRUE LOOP
+           KEY1 <= '1';
+           WAIT FOR 200 ns;
+           KEY1 <= '1';
+           WAIT FOR 200000 ns;
+        END LOOP;
   END PROCESS inter_key1_proc;
+   
+  inter_key2_proc: PROCESS
+  BEGIN
+        KEY2 <= '1';
+        WAIT FOR 10000 ns; -- phase offset
+        WHILE TRUE LOOP
+           KEY2 <= '0';
+           WAIT FOR 200 ns;
+           KEY2 <= '1';
+           WAIT FOR 40000000 ns;
+        END LOOP;
+  END PROCESS inter_key2_proc;
+  
+  inter_key3_proc: PROCESS
+  BEGIN
+        KEY3 <= '1';
+        WAIT FOR 70000 ns; -- phase offset
+        WHILE TRUE LOOP
+           KEY3 <= '1';
+           WAIT FOR 200 ns;
+           KEY3 <= '1';
+           WAIT FOR 200000 ns;
+        END LOOP;
+  END PROCESS inter_key3_proc;
    
  
 END struct;

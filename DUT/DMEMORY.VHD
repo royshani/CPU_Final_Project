@@ -24,13 +24,13 @@ END dmemory;
 ARCHITECTURE behavior OF dmemory IS
 	SIGNAL write_clock	: STD_LOGIC;
 	SIGNAL write_enable	: STD_LOGIC;
-	SIGNAL dMemAddr		: STD_LOGIC_VECTOR(MemWidth-1 DOWNTO 0);
+	SIGNAL dMemAddr		: STD_LOGIC_VECTOR(12-1 DOWNTO 0);
 BEGIN
 
 
 	ModelSim: 
 		IF (SIM = TRUE) GENERATE
-				dMemAddr <= address(11 DOWNTO 0) when is_ra = '1' ELSE
+				dMemAddr <= address(11 DOWNTO 0) when is_ra = '1' or index_11 = '1' ELSE
 							address(13 DOWNTO 2);
 		END GENERATE ModelSim;
 		
@@ -40,19 +40,19 @@ BEGIN
 							address(13 DOWNTO 2) & "00";
 		END GENERATE FPGA;
 	
-	write_enable <= '1' WHEN (index_11 = '0' AND Memwrite = '1' and ena = '1') ELSE '0';
-	
+	--write_enable <= '1' WHEN (index_11 = '0' AND Memwrite = '1' and ena = '1') ELSE '0';
+	write_enable <= '1' WHEN (Memwrite = '1' and ena = '1') ELSE '0'; -- for testing
 
 	data_memory : altsyncram
 	GENERIC MAP  (
 		operation_mode => "SINGLE_PORT",
 		width_a => 32,
-		widthad_a => 14,
-		numwords_a => 16384,
-		lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = DTCM",
+		widthad_a => 12,
+		--numwords_a => 16384,
+		--lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = DTCM",
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
-		init_file => "C:\hanan\CPU\FinalProject\check\DTCM.hex",
+		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\DTCM.hex",
 		intended_device_family => "Cyclone"
 	)
 	PORT MAP (

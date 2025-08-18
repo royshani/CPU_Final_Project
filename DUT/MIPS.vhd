@@ -8,8 +8,8 @@ USE IEEE.STD_LOGIC_ARITH.ALL;
 -----------------------------------------
 
 ENTITY MIPS IS
-	GENERIC (	MemWidth 	: INTEGER := 10;
-				SIM 		: BOOLEAN := FALSE;
+	GENERIC (	MemWidth 	: INTEGER := 8;
+				SIM 		: BOOLEAN := TRUE;
 				CtrlBusSize	: integer := 8;
 				AddrBusSize	: integer := 32;
 				DataBusSize	: integer := 32;
@@ -293,6 +293,8 @@ BEGIN
 					   X"00";	 
 	MemReadBus		<= MemRead;
 	
+	MemWrite           <= '1' WHEN (Instruction(31 DOWNTO 26) = "101011") else '0';
+
 	MemWriteBus		<= MemWrite;
 	
 	AddressBus		<= X"00000" & ALU_result(11 DOWNTO 0) WHEN (MemRead = '1' OR MemWrite = '1')
@@ -326,22 +328,22 @@ BEGIN
 		ELSIF (rising_edge(clock)) THEN
 			IF (INTR_STATE = "00") THEN
 				IF (INTR = '1') THEN
-					INTA_sig	<= '0'; -- send ack to mcu
+					INTA_sig	<= '0';
 					INTR_STATE	:= "01";
-					HOLD_PC		<= '1'; -- hold current pc
+					HOLD_PC		<= '1';
 					STATE <= '0';
 				END IF;
 				Read_ISR_PC	<= '0';
 				
 			ELSIF (INTR_STATE = "01") THEN		
-				INTA_sig	<= '1'; 
+				INTA_sig	<= '1';
 				INTR_STATE 	:= "10";
 				STATE <= '1';
 								
 			ELSE 
-				ISRAddr		<= read_data; -- get the ISR address from dmemory
+				ISRAddr		<= read_data;
 				INTR_STATE 	:= "00";
-				Read_ISR_PC	<= '1'; -- jump to ISR
+				Read_ISR_PC	<= '1';
 				HOLD_PC		<= '0';
 				STATE <= '0';
 			END IF;
@@ -356,7 +358,7 @@ BEGIN
 			
 		ELSIF (rising_edge(clock)) THEN
 			IF (INTR = '1') THEN
-				EPC	<= PC(9 DOWNTO 2); -- save current pc
+				EPC	<= PC(9 DOWNTO 2);
 			END IF;
 		END IF;
 	

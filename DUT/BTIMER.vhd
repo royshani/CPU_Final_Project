@@ -68,6 +68,7 @@ BEGIN
 				PWM	<= '1';
 			ELSIF (BTCNT = BTCL0 OR BTCNT = BTCL1) THEN
 				PWM	<= NOT PWM; -- Toggle PWM signal
+
 			END IF;
 		END IF;
 	END PROCESS;
@@ -84,6 +85,9 @@ BEGIN
 				BTCNT <= BTCNT_io;
 			ELSIF(BTHOLD = '0') THEN 
 				BTCNT <= BTCNT + 1;
+				if (BTCNT = BTCL0) then
+					BTCNT <= X"00000000";
+				END	if;
 			END IF;
 		END IF;
 	END PROCESS;

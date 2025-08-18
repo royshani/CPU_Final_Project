@@ -9,8 +9,8 @@ package aux_package is
 	
 	
 	COMPONENT MIPS IS
-	GENERIC (	MemWidth 	: INTEGER := 10;
-				SIM 		: BOOLEAN := FALSE;
+	GENERIC (	MemWidth 	: INTEGER := 8;
+				SIM 		: BOOLEAN := TRUE;
 				CtrlBusSize	: integer := 8;
 				AddrBusSize	: integer := 32;
 				DataBusSize	: integer := 32;

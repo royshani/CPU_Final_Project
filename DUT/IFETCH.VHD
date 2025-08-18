@@ -38,7 +38,7 @@ END Ifetch;
 ARCHITECTURE behavior OF Ifetch IS
 	SIGNAL instruction_temp  : STD_LOGIC_VECTOR( 31 DOWNTO 0 );
 	SIGNAL PC, PC_plus_4 , 	PC_plus_4_jr : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-	SIGNAL Mem_Addr 		 : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+	SIGNAL Mem_Addr 		 : STD_LOGIC_VECTOR( 7 DOWNTO 0 );
 	SIGNAL Next_PC           : STD_LOGIC_VECTOR( 7 DOWNTO 0 );
 	SIGNAL f_clk  : STD_LOGIC;
 BEGIN
@@ -48,12 +48,12 @@ inst_memory: altsyncram
 	GENERIC MAP (
 		operation_mode => "ROM",
 		width_a => 32,
-		widthad_a => 10,
-		numwords_a => 1024,
-		lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
+		widthad_a => 8,
+		numwords_a => 256,
+		--lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
-		init_file => "C:\hanan\CPU\FinalProject\check\ITCM.hex",
+		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\ITCM.hex",
 		intended_device_family => "Cyclone"
 	)
 	PORT MAP (

@@ -7,8 +7,8 @@ USE work.aux_package.ALL;
 -- Entity Declaration for MCU
 -----------------------------------------
 ENTITY MCU IS
-	GENERIC(MemWidth	: INTEGER := 14;
-			SIM 		: BOOLEAN := FALSE;
+	GENERIC(MemWidth	: INTEGER := 8;
+			SIM 		: BOOLEAN := TRUE;
 			CtrlBusSize	: integer := 8;
 			AddrBusSize	: integer := 32;
 			DataBusSize	: integer := 32;

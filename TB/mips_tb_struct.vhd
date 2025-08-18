@@ -1,9 +1,9 @@
 
 
-ENTITY MCU_tb IS
+ENTITY a_MCU_tb IS
 
 
-END MCU_tb ;
+END a_MCU_tb ;
 
 
 LIBRARY IEEE;
@@ -13,10 +13,10 @@ USE work.aux_package.ALL;
 
 LIBRARY work;
 
-ARCHITECTURE struct OF MCU_tb IS
+ARCHITECTURE struct OF a_MCU_tb IS
 
 
-	CONSTANT MemWidth		: INTEGER := 12;
+	CONSTANT MemWidth		: INTEGER := 8;
 	CONSTANT SIM 			: BOOLEAN := TRUE;
 	CONSTANT IOSize			: INTEGER := 8;
 
@@ -49,7 +49,7 @@ ARCHITECTURE struct OF MCU_tb IS
 
 
 	COMPONENT MCU IS
-	GENERIC(MemWidth	: INTEGER := 10;
+	GENERIC(MemWidth	: INTEGER := 8;
 			SIM 		: BOOLEAN := TRUE;
 			CtrlBusSize	: integer := 8;
 			AddrBusSize	: integer := 32;

@@ -9,8 +9,8 @@ package aux_package is
 	
 	
 	COMPONENT MIPS IS
-	GENERIC (	MemWidth 	: INTEGER := 8;
-				SIM 		: BOOLEAN := TRUE;
+	GENERIC (	MemWidth 	: INTEGER ;
+				SIM 		: BOOLEAN ;
 				CtrlBusSize	: integer := 8;
 				AddrBusSize	: integer := 32;
 				DataBusSize	: integer := 32;
@@ -37,7 +37,8 @@ package aux_package is
 
 	COMPONENT Ifetch IS
 	GENERIC (MemWidth	: INTEGER;
-			 SIM 		: BOOLEAN);
+			 SIM 		: BOOLEAN
+			 );
 	PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
 			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
         	SIGNAL PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );

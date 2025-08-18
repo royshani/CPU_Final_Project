@@ -24,7 +24,7 @@ END dmemory;
 ARCHITECTURE behavior OF dmemory IS
 	SIGNAL write_clock	: STD_LOGIC;
 	SIGNAL write_enable	: STD_LOGIC;
-	SIGNAL dMemAddr		: STD_LOGIC_VECTOR(12-1 DOWNTO 0);
+	SIGNAL dMemAddr		: STD_LOGIC_VECTOR(memwidth + 3 DOWNTO 0);
 BEGIN
 
 
@@ -47,9 +47,15 @@ BEGIN
 	GENERIC MAP  (
 		operation_mode => "SINGLE_PORT",
 		width_a => 32,
-		widthad_a => 12,
-		--numwords_a => 16384,
-		--lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = DTCM",
+		widthad_a => MemWidth + 4,
+		numwords_a => 2**(MemWidth + 4),
+
+		
+		-- comment this out for modelsim
+		lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = DTCM",
+		-- until here
+
+
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
 		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\DTCM.hex",

@@ -11,7 +11,9 @@ USE altera_mf.altera_mf_components.all;
 -----------------------------------------
 ENTITY Ifetch IS
 	GENERIC (MemWidth	: INTEGER;
-			 SIM 		: BOOLEAN);
+			 SIM 		: BOOLEAN
+			 );
+			 
 	PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
 			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
         	SIGNAL PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
@@ -38,7 +40,7 @@ END Ifetch;
 ARCHITECTURE behavior OF Ifetch IS
 	SIGNAL instruction_temp  : STD_LOGIC_VECTOR( 31 DOWNTO 0 );
 	SIGNAL PC, PC_plus_4 , 	PC_plus_4_jr : STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-	SIGNAL Mem_Addr 		 : STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+	SIGNAL Mem_Addr 		 : STD_LOGIC_VECTOR( MemWidth-1 DOWNTO 0 ); -- changed this for robust check
 	SIGNAL Next_PC           : STD_LOGIC_VECTOR( 7 DOWNTO 0 );
 	SIGNAL f_clk  : STD_LOGIC;
 BEGIN
@@ -48,9 +50,13 @@ inst_memory: altsyncram
 	GENERIC MAP (
 		operation_mode => "ROM",
 		width_a => 32,
-		widthad_a => 8,
-		numwords_a => 256,
+		widthad_a => MemWidth,
+		numwords_a => 2**(MemWidth), --change this to verify for fpga and model sim
+
+		-- comment the following line out for modelsim
 		--lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
+
+
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
 		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\ITCM.hex",

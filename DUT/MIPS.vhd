@@ -8,8 +8,9 @@ USE IEEE.STD_LOGIC_ARITH.ALL;
 -----------------------------------------
 
 ENTITY MIPS IS
-	GENERIC (	MemWidth 	: INTEGER := 8;
-				SIM 		: BOOLEAN := TRUE;
+	GENERIC (	MemWidth 	: INTEGER ;
+				SIM 		: BOOLEAN ;
+
 				CtrlBusSize	: integer := 8;
 				AddrBusSize	: integer := 32;
 				DataBusSize	: integer := 32;
@@ -41,7 +42,8 @@ ARCHITECTURE structure OF MIPS IS
 
 	COMPONENT Ifetch
 		 GENERIC (MemWidth	: INTEGER;
-				  SIM 		: BOOLEAN);
+				  SIM 		: BOOLEAN
+				  );
 
    	     PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
 			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
@@ -293,9 +295,9 @@ BEGIN
 					   X"00";	 
 	MemReadBus		<= MemRead;
 	
-	MemWrite           <= '1' WHEN (Instruction(31 DOWNTO 26) = "101011") else '0';
+	--MemWrite           <= '1' WHEN (Instruction(31 DOWNTO 26) = "101011") else '0';
 
-	MemWriteBus		<= MemWrite;
+	MemWriteBus		<= '1' WHEN (Instruction(31 DOWNTO 26) = "101011") else '0';
 	
 	AddressBus		<= X"00000" & ALU_result(11 DOWNTO 0) WHEN (MemRead = '1' OR MemWrite = '1')
 						ELSE (OTHERS => '0');

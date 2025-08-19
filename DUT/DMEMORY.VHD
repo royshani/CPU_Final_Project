@@ -36,8 +36,8 @@ BEGIN
 		
 	FPGA: 
 		IF (SIM = FALSE) GENERATE
-				dMemAddr <= address(11 DOWNTO 0) & "00" when is_ra = '1' ELSE
-							address(13 DOWNTO 2) & "00";
+				dMemAddr <= "00" & address(11 DOWNTO 0) when is_ra = '1' or index_11 = '1' ELSE
+							"00" & address(13 DOWNTO 2);
 		END GENERATE FPGA;
 	
 	--write_enable <= '1' WHEN (index_11 = '0' AND Memwrite = '1' and ena = '1') ELSE '0';

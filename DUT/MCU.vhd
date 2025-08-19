@@ -48,11 +48,13 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL DataBus		: 	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 	
 	-- BASIC TIMER --
-	SIGNAL BTCTL		:	STD_LOGIC_VECTOR(CtrlBusSize-1 DOWNTO 0);
-	SIGNAL BTCNT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
-	SIGNAL BTCCR0		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
-	SIGNAL BTCCR1		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
-	SIGNAL BTIFG		:	STD_LOGIC;
+	SIGNAL BTCTL        : STD_LOGIC_VECTOR(CtrlBusSize-1 DOWNTO 0);
+	SIGNAL BTIP         : STD_LOGIC_VECTOR(1 DOWNTO 0); 		-- 2-bit prescaler select (BTCTL(1 downto 0))
+	SIGNAL BTCLR        : STD_LOGIC; 							-- Basic Timer Clear strobe (BTCTL(2))
+	SIGNAL BTCNT        : STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
+	SIGNAL BTCCR0       : STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
+	SIGNAL BTCCR1       : STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
+	SIGNAL BTIFG        : STD_LOGIC;
 
 	-- BASIC TIMER --
 	SIGNAL DIVIDEND		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
@@ -151,6 +153,10 @@ BEGIN
 			CS_HEX5		=> CS_HEX5
 		);
 
+	-- Extract BTIP and BTCLR from BTCTL
+	BTIP <= BTCTL(1 DOWNTO 0);  -- 2-bit prescaler select
+	BTCLR <= BTCTL(2);          -- Basic Timer Clear strobe
+	
 	PROCESS(pll_out)
 	BEGIN
 		if (falling_edge(pll_out)) then
@@ -192,8 +198,8 @@ BEGIN
 	DataBus <= final_QUOTIENT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
 			   final_RESIDUE WHEN  (AddressBus(11 DOWNTO 0) = X"838" AND MemReadBus = '1')  ELSE
 			   "000000000000000000000000" & Switches		WHEN  (AddressBus(11 DOWNTO 0) = X"810" AND MemReadBus = '1')  ELSE
-			   "0000000000000000000000000"  & IFG WHEN (AddressBus(11 DOWNTO 0) = X"83D" AND MemReadBus = '1')  ELSE
-			   "0000000000000000000000000"  & IntrEn WHEN (AddressBus(11 DOWNTO 0) = X"83C" AND MemReadBus = '1')  ELSE
+			   "0000000000000000000000000"  & IFG WHEN (AddressBus(11 DOWNTO 0) = X"841" AND MemReadBus = '1')  ELSE
+			   "0000000000000000000000000"  & IntrEn WHEN (AddressBus(11 DOWNTO 0) = X"840" AND MemReadBus = '1')  ELSE
 			   BTCNT WHEN (AddressBus(11 DOWNTO 0) = X"820" AND MemReadBus = '1')  ELSE
 			   (OTHERS => 'Z');
 
@@ -232,6 +238,7 @@ BEGIN
 			BTOUT	=> BTOUT
 		);
 		
+		
 	
 	IntrSrc	<=  DIVIFG & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
 	Intr_Controller: INTERRUPT
@@ -263,5 +270,7 @@ BEGIN
 	     inclk0 => clock,
 		  c0 => pll_out
 	   );
+
+	   
 	
 END structure;

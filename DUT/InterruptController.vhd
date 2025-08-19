@@ -59,10 +59,10 @@ TypeReg	<= 	X"00" WHEN reset  = '1' ELSE -- main
 
 
 -- Update the interrupt flag register based on data from the MCU or the IRQ sources
-IFG		<=	DataBus(6 DOWNTO 0)	WHEN (AddressBus = X"83D" AND MemWriteBus = '1') ELSE
+IFG		<=	DataBus(6 DOWNTO 0)	WHEN (AddressBus = X"841" AND MemWriteBus = '1') ELSE
 			IRQ AND IntrEn;		
 -- Update the interrupt type register based on data from the MCU
-TypeReg	<=	DataBus(RegSize-1 DOWNTO 0)	WHEN (AddressBus = X"83E" AND MemWriteBus = '1') ELSE
+TypeReg	<=	DataBus(RegSize-1 DOWNTO 0)	WHEN (AddressBus = X"842" AND MemWriteBus = '1') ELSE
 			(OTHERS => 'Z');
 			
 -- Clear the IRQ signals when the interrupt acknowledge is received
@@ -159,9 +159,9 @@ BEGIN
 END PROCESS;
 
 -- Provide data to the MCU on the data bus based on the address and read signals
-DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"83E" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0'))  ELSE
-			"0000000000000000000000000"	& IntrEn 	WHEN (AddressBus = X"83C" AND MemReadBus = '1') ELSE
-			"0000000000000000000000000"	& IFG	WHEN (AddressBus = X"83D" AND MemReadBus = '1') ELSE
+DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"842" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0'))  ELSE
+			"0000000000000000000000000"	& IntrEn 	WHEN (AddressBus = X"840" AND MemReadBus = '1') ELSE
+			"0000000000000000000000000"	& IFG	WHEN (AddressBus = X"841" AND MemReadBus = '1') ELSE
 			(OTHERS => 'Z'); 
 
 IRQ_OUT <= IRQ;
@@ -183,7 +183,7 @@ END PROCESS;
 PROCESS(clock) 
 BEGIN
 	IF (rising_edge(clock)) THEN
-		IF (AddressBus = X"83C" AND MemWriteBus = '1') THEN
+		IF (AddressBus = X"840" AND MemWriteBus = '1') THEN
 			IntrEn 	<=	DataBus(6 DOWNTO 0);
 		END IF;		
 	END IF;

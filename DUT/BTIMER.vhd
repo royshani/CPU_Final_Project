@@ -33,10 +33,16 @@ ARCHITECTURE structure OF BTIMER IS
 	
 	SIGNAL BTCL0	: STD_LOGIC_VECTOR(31 DOWNTO 0);
 	SIGNAL BTCL1	: STD_LOGIC_VECTOR(31 DOWNTO 0);
-	
+	SIGNAL HEU0		: STD_LOGIC := '0';
+	SIGNAL BTCNT_eq_BTCL0 : STD_LOGIC := '0';
+	SIGNAL BTCNT_eq_BTCL0_prev : STD_LOGIC := '0';
 	SIGNAL PWM		: STD_LOGIC;
-
-	ALIAS BTIPx		IS BTCTL(2 DOWNTO 0);
+	-- Prescaler select (2 bits) and clear strobe (1 bit)
+	--signal BTIP  : std_logic_vector(1 downto 0);
+	
+	-- Updated aliases for new BTCTL bit mapping
+	ALIAS BTIPx		IS BTCTL(1 DOWNTO 0); -- 2-bit prescaler select
+	ALIAS BTCLR		IS BTCTL(2);          -- Basic Timer Clear strobe
 	ALIAS BTSSEL	IS BTCTL(4 DOWNTO 3);
 	ALIAS BTHOLD	IS BTCTL(5);
 	ALIAS BTOUTEN	IS BTCTL(6);
@@ -44,7 +50,7 @@ ARCHITECTURE structure OF BTIMER IS
 BEGIN
 
 	PROCESS (MCLK) BEGIN
-		IF (falling_edge(MCLK)) THEN
+		IF (falling_edge(MCLK)) and BTCNT = X"00000000" THEN -- added modification to counter compare values only when counter is 0
 				BTCL0 <= BTCCR0;
 				BTCL1 <= BTCCR1;
 		END IF;
@@ -61,6 +67,7 @@ BEGIN
 	-- Generates PWM signal based on timer counts
 	
 	PROCESS (CLK, Addr) BEGIN
+	
 		IF reset = '1' THEN
 			PWM <= '1';
 		ELSIF (falling_edge(CLK)) THEN
@@ -75,22 +82,36 @@ BEGIN
 	BTOUT	<= PWM;
 
 		
-	-- Update timer counter based on address and write signal
 	PROCESS(MCLK, CLK, reset, Addr)
 	BEGIN
 		IF (reset = '1' OR IRQ_OUT = '1') THEN
-			BTCNT <= X"00000000";
+			BTCNT <= (others => '0');
+			HEU0  <= '0';
+			BTCNT_eq_BTCL0_prev <= '0';
+	
 		ELSIF (falling_edge(CLK)) THEN
-			IF(Addr = X"820" AND BTWrite = '1') THEN
+			-- Save previous comparator result
+			BTCNT_eq_BTCL0_prev <= BTCNT_eq_BTCL0;
+			HEU0 <= '0';  -- default clear
+	
+			-- BTCLR: force clear
+			IF (BTCLR = '1') THEN
+				BTCNT <= (others => '0');
+	
+			ELSIF (Addr = X"820" AND BTWrite = '1') THEN
 				BTCNT <= BTCNT_io;
-			ELSIF(BTHOLD = '0') THEN 
+	
+			ELSIF (BTHOLD = '0') THEN
 				BTCNT <= BTCNT + 1;
-				if (BTCNT = BTCL0) then
-					BTCNT <= X"00000000";
-				END	if;
+				IF (BTCNT = BTCL0) THEN
+					HEU0 <= '1';                -- single-cycle pulse
+					BTCNT <= (others => '0');   -- reset counter
+				END IF;
 			END IF;
 		END IF;
 	END PROCESS;
+	
+	
 	
 	-- Calculates the divided clock for BTCNT based on MCLK
 	PROCESS(MCLK, reset, CLK)
@@ -117,15 +138,17 @@ BEGIN
 	-- Handles data transfer to/from BTCNT_io based on address and read signal
 	BTCNT_io <= BTCNT WHEN (Addr = X"820" AND BTRead = '1') ELSE (OTHERS => 'Z');	
 	
-	-- Determine interrupt flag based on BTCNT
-	WITH BTIPx SELECT BTIFG <= 
-		BTCNT(25)	WHEN	"111",
-		BTCNT(23) 	WHEN	"110",
-		BTCNT(19) 	WHEN	"101",
-		BTCNT(15) 	WHEN	"100",
-		BTCNT(11) 	WHEN	"011",
-		BTCNT(7) 	WHEN	"010",
-		BTCNT(3) 	WHEN	"001", 
-		BTCNT(0) 	WHEN	"000",
-		'0'		  	WHEN	OTHERS;
+-- One-shot pulse generation for HEU0 inside the process
+-- BTCNT_eq_BTCL0 is a simple comparator
+BTCNT_eq_BTCL0 <= '1' WHEN (BTCNT = BTCL0) ELSE '0';
+
+-- Determine interrupt flag based on BTCNT
+WITH BTIPx SELECT BTIFG <= 
+    BTCNT(31)  WHEN "11",  -- divide by 1
+    BTCNT(27)  WHEN "10",  -- divide by 4
+    BTCNT(23)  WHEN "01",  -- divide by 8
+    HEU0       WHEN "00",  -- when BTCNT = BTCL0
+    '0'        WHEN OTHERS;
+
+	
 END structure;

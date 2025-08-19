@@ -84,7 +84,7 @@ inst_memory: altsyncram
 		
 		FPGA: 
 		IF (SIM = FALSE) GENERATE
-				Mem_Addr <= PC;
+				Mem_Addr <= "00" & PC( 9 DOWNTO 2 );
 		END GENERATE FPGA;
 		------------------------------------------------------------------
 		

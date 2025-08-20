@@ -12,7 +12,8 @@ ENTITY OptAddrDecoder IS
 		AddressBus					: IN	STD_LOGIC_VECTOR(11 DOWNTO 0);
 		CS_LEDR, CS_SW, CS_KEY		: OUT 	STD_LOGIC;
 		CS_HEX0, CS_HEX1, CS_HEX2	: OUT 	STD_LOGIC;
-		CS_HEX3, CS_HEX4, CS_HEX5	: OUT 	STD_LOGIC
+		CS_HEX3, CS_HEX4, CS_HEX5	: OUT 	STD_LOGIC;
+		CS_FIR		: OUT 	STD_LOGIC
 		);
 END OptAddrDecoder;
 ----------------------------------------
@@ -32,5 +33,7 @@ BEGIN
 	CS_SW	<=	'0' WHEN reset = '1' ELSE '1' WHEN AddressBus = X"810" ELSE '0';-- Select SW at address   0x810
 	CS_KEY	<=	'0' WHEN reset = '1' ELSE '1' WHEN AddressBus = X"814" ELSE '0';-- Select KEY at address  0x814
 	
+	-- FIR chip select signal (covers all FIR addresses 0x82C-0x83C)
+	CS_FIR	<=	'0' WHEN reset = '1' ELSE '1' WHEN (AddressBus >= X"82C" AND AddressBus <= X"83C") ELSE '0';
 
 END structure;

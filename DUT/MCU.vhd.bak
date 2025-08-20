@@ -96,7 +96,6 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL GIE			:	STD_LOGIC;
 	SIGNAL INTR_Active	:	STD_LOGIC;
 	SIGNAL CLR_IRQ		:	STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL FIRIFG_CLR	:	STD_LOGIC;
 	
 	
 BEGIN	
@@ -203,7 +202,7 @@ BEGIN
 				case AddressBus(11 DOWNTO 0) is
 					when X"82C" => FIRCTL <= DataBus;
 					when X"830" => FIRIN <= DataBus;
-					-- when X"834" => FIROUT <= DataBus;
+					when X"834" => FIROUT <= DataBus;
 					when X"838" => COEF3_0 <= DataBus;
 					when X"83C" => COEF7_4 <= DataBus;
 					when others => null;
@@ -234,7 +233,7 @@ BEGIN
 
 			 
 			 
-	DataBus <= FIROUT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
+	DataBus <= FIROUT WHEN (CS_FIR = '1' AND AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
 			   -- DIVIDER outputs (commented out to avoid GPIO conflicts)
 			   -- final_QUOTIENT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
 			   -- final_RESIDUE WHEN  (AddressBus(11 DOWNTO 0) = X"838" AND MemReadBus = '1')  ELSE
@@ -263,8 +262,7 @@ BEGIN
 			FIFOFULL => FIFOFULL,       -- FIFO full status
 			FIFOEMPTY => FIFOEMPTY,     -- FIFO empty status
 			FIRIFG => FIRIFG,           -- FIR interrupt flag
-			FIRIFG_OUTREADY => FIRIFG_OUTREADY, -- NEW: asserts when FIROUT is valid
-
+			
 			-- Data interface
 			FIRIN => FIRIN,             -- FIR input data
 			FIROUT => FIROUT,           -- FIR output data
@@ -282,10 +280,7 @@ BEGIN
 			-- Memory interface
 			Addr => AddressBus(11 DOWNTO 0),
 			FIRRead => MemReadBus,
-			FIRWrite => MemWriteBus,
-			
-			-- Interrupt control
-			FIRIFG_CLR => FIRIFG_CLR    -- Clear FIR interrupt flag
+			FIRWrite => MemWriteBus
 		);
 
 	-- DIVIDER component (commented out to avoid GPIO conflicts)
@@ -324,7 +319,7 @@ BEGIN
 		
 		
 	
-	IntrSrc	<=  FIFOFULL & FIFOEMPTY & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
+	IntrSrc	<=  FIRIFG & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & FIFOEMPTY & '0';
 	Intr_Controller: INTERRUPT
 		GENERIC MAP(
 			DataBusSize	=> DataBusSize,
@@ -348,8 +343,7 @@ BEGIN
 			CLR_IRQ_OUT	=> CLR_IRQ,
 		    GIE			=> GIE,
 			IFG 		=> IFG,
-			IntrEn		=> IntrEn,
-			FIRIFG_CLR	=> FIRIFG_CLR
+			IntrEn		=> IntrEn
 		);
 		
 		 m1: PLL port map(

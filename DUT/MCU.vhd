@@ -64,6 +64,7 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL COEF3_0		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL COEF7_4		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL FIRIFG		:	STD_LOGIC := '0';
+	SIGNAL FIRIFG_OUTREADY : STD_LOGIC := '0';  -- NEW: Output ready signal
 	SIGNAL FIFOFULL		:	STD_LOGIC := '0';
 	SIGNAL FIFOEMPTY	:	STD_LOGIC := '1';
 	
@@ -324,7 +325,7 @@ BEGIN
 		
 		
 	
-	IntrSrc	<=  FIFOFULL & FIFOEMPTY & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
+	IntrSrc	<=  FIRIFG_OUTREADY  & FIFOEMPTY & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
 	Intr_Controller: INTERRUPT
 		GENERIC MAP(
 			DataBusSize	=> DataBusSize,

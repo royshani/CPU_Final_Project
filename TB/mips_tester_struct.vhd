@@ -81,7 +81,7 @@ BEGIN
         KEY1 <= '1';
         WAIT FOR 100000 ns;
         WHILE TRUE LOOP
-           KEY1 <= '1';
+           KEY1 <= '0';
            WAIT FOR 2000 ns;
            KEY1 <= '1';
            WAIT FOR 2000000 ns;
@@ -93,7 +93,7 @@ BEGIN
         KEY2 <= '1';
         WAIT FOR 4000000 ns; -- phase offset
         WHILE TRUE LOOP
-           KEY2 <= '1';
+           KEY2 <= '0';
            WAIT FOR 2000 ns;
            KEY2 <= '1';
            WAIT FOR 2000000 ns;
@@ -105,7 +105,7 @@ BEGIN
         KEY3 <= '1';
         WAIT FOR 7000000 ns; -- phase offset
         WHILE TRUE LOOP
-           KEY3 <= '1';
+           KEY3 <= '0';
            WAIT FOR 2000 ns;
            KEY3 <= '1';
            WAIT FOR 2000000 ns;

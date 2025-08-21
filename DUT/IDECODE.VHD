@@ -3,6 +3,7 @@ LIBRARY IEEE; 			-- the MIPS computer)
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_ARITH.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+
 -----------------------------------------
 -- Entity Declaration for Idecode
 -----------------------------------------
@@ -75,8 +76,8 @@ BEGIN
 
 		-- Mux to bypass data memory for Rformat instructions
 	write_data <= "000000000000000000000000" & PC_PLUS_4_jr(9 DOWNTO 2) when (write_register_address = "11111" and Opcode /= "100011") ELSE
-				  databus WHEN (AddressBus(11 DOWNTO 0) = X"834" or AddressBus(11 DOWNTO 0) = X"838"   or
-			      AddressBus(11 DOWNTO 0) = X"83D" or AddressBus(11 DOWNTO 0) = X"83C" OR AddressBus(11 DOWNTO 0) = X"810" ) ELSE
+				  databus WHEN (AddressBus(11 DOWNTO 0) = X"834" or AddressBus(11 DOWNTO 0) = X"838"   or AddressBus(11 DOWNTO 0) = X"83C" or
+			      AddressBus(11 DOWNTO 0) = X"840" or AddressBus(11 DOWNTO 0) = X"841" OR AddressBus(11 DOWNTO 0) = X"810" ) ELSE
 				  ALU_result WHEN ( MemtoReg = "00" ) ELSE 
 				  read_data;
 			

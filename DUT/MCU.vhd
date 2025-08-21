@@ -75,6 +75,7 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL FIFOFULL_status  : STD_LOGIC := '0'; -- FIFO full status (bit 3, read-only)
 	SIGNAL FIFORST		:	STD_LOGIC := '0';  -- FIFO reset (bit 4)
 	SIGNAL FIFOWEN		:	STD_LOGIC := '0';  -- FIFO write enable (bit 5)
+	SIGNAL FIFOREN		:	STD_LOGIC := '0';  -- FIFO read enable (bit 6) - NEW: Controls FIFO reading
 	
 	-- DIVIDER signals (commented out to avoid GPIO conflicts with FIR)
 	-- SIGNAL DIVIDEND		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
@@ -181,6 +182,7 @@ BEGIN
 	FIFOFULL_status <= FIFOFULL;   -- FIFO full status (read-only)
 	FIFORST <= FIRCTL(4);          -- FIFO reset
 	FIFOWEN <= FIRCTL(5);          -- FIFO write enable
+	FIFOREN <= FIRCTL(6);          -- FIFO read enable (controlled by FIRCTL bit 6)
 	
 	-- FIR register write process
 	PROCESS(pll_out)
@@ -258,7 +260,7 @@ BEGIN
 			-- Control signals
 			FIRENA => FIRENA,           -- FIR core enable
 			FIFOWEN => FIFOWEN,         -- FIFO write enable
-			FIFOREN => '1',             -- FIFO read enable (always enabled when processing)
+			FIFOREN => FIFOREN,         -- FIFO read enable (controlled by FIRCTL bit 6)
 			
 			-- Status signals
 			FIFOFULL => FIFOFULL,       -- FIFO full status

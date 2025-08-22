@@ -45,7 +45,7 @@ BEGIN
       END LOOP;
       WAIT;
    END PROCESS u_0clk_proc;
-   mw_U_0disable_clk <= TRUE AFTER 1000000000 ns;
+   mw_U_0disable_clk <= TRUE AFTER 10000000 ns;
    clock <= mw_U_0clk;
 
 

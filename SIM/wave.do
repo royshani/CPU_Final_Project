@@ -132,7 +132,7 @@ add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/dividend
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/divisor
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/quotient_OUT
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/remainder_OUT
-add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/DIVIFG
+add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/FIRIFG
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/state_reg
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/state_next
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/z_reg

@@ -13,7 +13,7 @@ ENTITY MCU IS
 			CtrlBusSize	: integer := 8;
 			AddrBusSize	: integer := 32;
 			DataBusSize	: integer := 32;
-			IrqSize		: integer := 8;
+			IrqSize		: integer := 7;
 			RegSize		: integer := 8
 			);
 	PORT( 
@@ -37,8 +37,7 @@ ARCHITECTURE structure OF MCU IS
 	-- CHIP SELECT SIGNALS --
 	SIGNAL CS_LEDR, CS_SW, CS_KEY		: STD_LOGIC;
 	SIGNAL CS_HEX0, CS_HEX1, CS_HEX2	: STD_LOGIC;
-	SIGNAL CS_HEX3, CS_HEX4, CS_HEX5, pll_out	: STD_LOGIC;
-	SIGNAL CS_FIR		: STD_LOGIC;
+	SIGNAL CS_HEX3, CS_HEX4, CS_HEX5, pll_out, pll_out2	: STD_LOGIC;
 	
 	
 	-- GPIO SIGNALS -- 
@@ -57,48 +56,46 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL BTCCR1       : STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 	SIGNAL BTIFG        : STD_LOGIC;
 
-	-- FIR Filter signals
-	SIGNAL FIRCTL		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL FIRIN		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL FIROUT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL COEF3_0		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL COEF7_4		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	-- BASIC TIMER --
+	SIGNAL DIVIDEND		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL DIVISOR		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL final_QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL final_RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL FIRIFG		:	STD_LOGIC := '0';
-	SIGNAL FIRIFG_OUTREADY : STD_LOGIC := '0';  -- NEW: Output ready signal
-	SIGNAL FIFOFULL		:	STD_LOGIC := '0';
-	SIGNAL FIFOEMPTY	:	STD_LOGIC := '1';
+	SIGNAL DIVENA		:	STD_LOGIC  := '0';
 	
-	-- FIR Control signals extracted from FIRCTL
-	SIGNAL FIRENA		:	STD_LOGIC := '0';  -- FIR core enable (bit 0)
-	SIGNAL FIRRST		:	STD_LOGIC := '0';  -- FIR core reset (bit 1)
-	SIGNAL FIFOEMPTY_status : STD_LOGIC := '1'; -- FIFO empty status (bit 2, read-only)
-	SIGNAL FIFOFULL_status  : STD_LOGIC := '0'; -- FIFO full status (bit 3, read-only)
-	SIGNAL FIFORST		:	STD_LOGIC := '0';  -- FIFO reset (bit 4)
-	SIGNAL FIFOWEN		:	STD_LOGIC := '0';  -- FIFO write enable (bit 5)
-	SIGNAL FIFOREN		:	STD_LOGIC := '0';  -- FIFO read enable (bit 6) - NEW: Controls FIFO reading
-	
-	-- DIVIDER signals (commented out to avoid GPIO conflicts with FIR)
-	-- SIGNAL DIVIDEND		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL DIVISOR		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL final_QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL final_RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	-- SIGNAL DIVIFG		:	STD_LOGIC := '0';
-	-- SIGNAL DIVENA		:	STD_LOGIC  := '0';
-	
+	-- FIFO Status signals
+	SIGNAL FIFOFULL_flag	:	STD_LOGIC := '0';
+	SIGNAL FIFOEMPTY_flag	:	STD_LOGIC := '0';
+
+	-- FIR --
+	SIGNAL FIRCTL		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL FIRIN		:	STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL FIROUT		:	STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL final_FIROUT	:	STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL FIRIFG_type	:	STD_LOGIC_VECTOR(1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF0		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF1		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF2		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF3		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF4		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF5		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF6		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL COEF7		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
+
 	-- INTERRUPT MODULE --
-	SIGNAL IntrEn		:	STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL IFG			:	STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL IntrEn		:	STD_LOGIC_VECTOR(6 DOWNTO 0);
+	SIGNAL IFG			:	STD_LOGIC_VECTOR(6 DOWNTO 0);
 	SIGNAL TypeReg		:	STD_LOGIC_VECTOR(RegSize-1 DOWNTO 0);
-	SIGNAL IntrSrc		:	STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL IRQ_OUT		:	STD_LOGIC_VECTOR(7 DOWNTO 0);
+	SIGNAL IntrSrc		:	STD_LOGIC_VECTOR(6 DOWNTO 0);
+	SIGNAL IRQ_OUT		:	STD_LOGIC_VECTOR(6 DOWNTO 0);
 	SIGNAL INTR			:	STD_LOGIC;
 	SIGNAL INTA			:	STD_LOGIC;  
 	SIGNAL GIE			:	STD_LOGIC;
 	SIGNAL INTR_Active	:	STD_LOGIC;
-	SIGNAL CLR_IRQ		:	STD_LOGIC_VECTOR(7 DOWNTO 0);
-	SIGNAL FIRIFG_CLR	:	STD_LOGIC;
+	SIGNAL CLR_IRQ		:	STD_LOGIC_VECTOR(6 DOWNTO 0);
 	
 	
 BEGIN	
@@ -143,8 +140,7 @@ BEGIN
 				CS_HEX2		=> CS_HEX2,
 				CS_HEX3		=> CS_HEX3,
 				CS_HEX4		=> CS_HEX4,
-				CS_HEX5		=> CS_HEX5,
-				CS_FIR		=> CS_FIR
+				CS_HEX5		=> CS_HEX5
 				);
 		
 	
@@ -175,59 +171,63 @@ BEGIN
 			CS_HEX5		=> CS_HEX5
 		);
 
-	-- Extract FIR control signals from FIRCTL
-	FIRENA <= FIRCTL(0);           -- FIR core enable
-	FIRRST <= FIRCTL(1);           -- FIR core reset
-	FIFOEMPTY_status <= FIFOEMPTY; -- FIFO empty status (read-only)
-	FIFOFULL_status <= FIFOFULL;   -- FIFO full status (read-only)
-	FIFORST <= FIRCTL(4);          -- FIFO reset
-	FIFOWEN <= FIRCTL(5);          -- FIFO write enable
-	FIFOREN <= FIRCTL(6);          -- FIFO read enable (controlled by FIRCTL bit 6)
+	-- Extract BTIP and BTCLR from BTCTL
+	BTIP <= BTCTL(1 DOWNTO 0);  -- 2-bit prescaler select
+	BTCLR <= BTCTL(2);          -- Basic Timer Clear strobe
 	
-	-- FIR register write process
 	PROCESS(pll_out)
 	BEGIN
 		if (falling_edge(pll_out)) then
-			-- Basic Timer registers
 			if(AddressBus(11 DOWNTO 0) = X"81C" AND MemWriteBus = '1') then
-				BTCTL <= ControlBus;
+				BTCTL <= ControlBus; -- BTCTL is the control register for the basic timer
 			END IF;
 			
 			if(AddressBus(11 DOWNTO 0) = X"824" AND MemWriteBus = '1') then
-				BTCCR0 <= DataBus;
+				BTCCR0 <= DataBus; -- BTCCR0 is the counter value for the basic timer
 			END IF;
 			
 			if(AddressBus(11 DOWNTO 0) = X"828" AND MemWriteBus = '1') then
-				BTCCR1 <= DataBus;
+				BTCCR1 <= DataBus; -- BTCCR1 is the counter value for the basic timer
 			END IF;
 			
-			-- FIR registers (handled by FIR component when CS_FIR is active)
-			if(CS_FIR = '1' AND MemWriteBus = '1') then
-				case AddressBus(11 DOWNTO 0) is
-					when X"82C" => FIRCTL <= DataBus;
-					when X"830" => FIRIN <= DataBus;
-					-- when X"834" => FIROUT <= DataBus;
-					when X"838" => COEF3_0 <= DataBus;
-					when X"83C" => COEF7_4 <= DataBus;
-					when others => null;
-				end case;
-			end if;
+			if(AddressBus(11 DOWNTO 0) = X"82C" AND MemWriteBus = '1') then
+				FIRCTL <= DataBus(7 DOWNTO 0); -- FIRCTL is the control register for the FIR
+			END IF;
 			
-			-- DIVIDER registers (commented out to avoid GPIO conflicts)
-			-- if(AddressBus(11 DOWNTO 0) = X"82C" AND MemWriteBus = '1') then
-			-- 	DIVIDEND <= DataBus;
-			-- END IF;
-			
-			-- if(AddressBus(11 DOWNTO 0) = X"830" AND MemWriteBus = '1') then
-			-- 	DIVISOR <= DataBus;
-			-- 	DIVENA <= '1';
-			-- END IF;
-			
-			-- if(DIVIFG = '1') then
-			-- 	DIVENA <= '0';
-			-- 	final_QUOTIENT <= QUOTIENT;
-			-- 	final_RESIDUE <= RESIDUE;
-			-- END IF;
+			if(AddressBus(11 DOWNTO 0) = X"830" AND MemWriteBus = '1') then
+				FIRIN <= DataBus; -- FIRIN is the input data for the FIR
+				-- DIVENA <= '1'; --IN FIR THIS IS PERFORMED IN FIRCTL
+			END IF;
+
+			IF(AddressBus(11 DOWNTO 0) = X"838" AND MemWriteBus = '1') then
+				COEF0 <= DataBus(7 DOWNTO 0);
+				COEF1 <= DataBus(15 DOWNTO 8);
+				COEF2 <= DataBus(23 DOWNTO 16);
+				COEF3 <= DataBus(31 DOWNTO 24);
+			END IF;
+
+			IF(AddressBus(11 DOWNTO 0) = X"83C" AND MemWriteBus = '1') then
+				COEF4 <= DataBus(7 DOWNTO 0);
+				COEF5 <= DataBus(15 DOWNTO 8);
+				COEF6 <= DataBus(23 DOWNTO 16);
+				COEF7 <= DataBus(31 DOWNTO 24);
+			END IF;
+
+			if(FIRIFG = '1') AND FIRIFG_type = "10" then
+				-- DIVENA <= '0'; --IN FIR THIS IS PERFORMED IN FIRCTL
+				final_FIROUT <= FIROUT;	-- FINAL OUTPUT OF FIR
+				-- final_RESIDUE <= RESIDUE; -- IN FIR THIS IS UNUSED
+			END IF;
+		END IF;
+	END PROCESS;
+	
+	-- Process to update FIRCTL with FIFO status
+	PROCESS(pll_out)
+	BEGIN
+		if (falling_edge(pll_out)) then
+			-- Update FIRCTL bits 2 and 3 with FIFO status
+			FIRCTL(2) <= FIFOEMPTY_flag;  -- FIFO Empty status
+			FIRCTL(3) <= FIFOFULL_flag;   -- FIFO Full status
 		END IF;
 	END PROCESS;
 	
@@ -237,76 +237,47 @@ BEGIN
 
 			 
 			 
-	DataBus <= FIROUT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
-			   -- DIVIDER outputs (commented out to avoid GPIO conflicts)
-			   -- final_QUOTIENT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
-			   -- final_RESIDUE WHEN  (AddressBus(11 DOWNTO 0) = X"838" AND MemReadBus = '1')  ELSE
+	DataBus <= final_FIROUT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
 			   "000000000000000000000000" & Switches		WHEN  (AddressBus(11 DOWNTO 0) = X"810" AND MemReadBus = '1')  ELSE
-			   "000000000000000000000000"  & IFG WHEN (AddressBus(11 DOWNTO 0) = X"841" AND MemReadBus = '1')  ELSE
-			   "000000000000000000000000"  & IntrEn WHEN (AddressBus(11 DOWNTO 0) = X"840" AND MemReadBus = '1')  ELSE
+			   "0000000000000000000000000"  & IFG WHEN (AddressBus(11 DOWNTO 0) = X"841" AND MemReadBus = '1')  ELSE
+			   "0000000000000000000000000"  & IntrEn WHEN (AddressBus(11 DOWNTO 0) = X"840" AND MemReadBus = '1')  ELSE
 			   BTCNT WHEN (AddressBus(11 DOWNTO 0) = X"820" AND MemReadBus = '1')  ELSE
 			   (OTHERS => 'Z');
 
 
-	-- FIR Filter component
-	FIR_acc: FIR_Filter
+	
+	div_acc: Divider
 		Port MAP(
-			-- Clock and Reset
-			FIRCLK => pll_out,          -- FIR core clock
-			FIFOCLK => pll_out,         -- FIFO clock (using same clock for simplicity)
-			FIRRST => FIRRST,           -- FIR core reset
-			FIFORST => FIFORST,         -- FIFO reset
+			FIFOCLK => pll_out,          -- FIFO Clock signal
+			FIRCLK => pll_out2,          -- FIR Clock signal
+			Addr	=> AddressBus(11 DOWNTO 0),
+			DIVRead	=> MemReadBus,
 			
-			-- Control signals
-			FIRENA => FIRENA,           -- FIR core enable
-			FIFOWEN => FIFOWEN,         -- FIFO write enable
-			FIFOREN => FIFOREN,         -- FIFO read enable (controlled by FIRCTL bit 6)
-			
-			-- Status signals
-			FIFOFULL => FIFOFULL,       -- FIFO full status
-			FIFOEMPTY => FIFOEMPTY,     -- FIFO empty status
-			FIRIFG => FIRIFG,           -- FIR interrupt flag
-			FIRIFG_OUTREADY => FIRIFG_OUTREADY, -- NEW: asserts when FIROUT is valid
+			reset => resetSim,       -- Asynchronous reset signal
+			ena  => DIVENA,        -- Start signal to begin the division
+			dividend => DIVIDEND, -- Input for dividend (32-bit)
+			divisor => DIVISOR, -- Input for divisor (32-bit)
+			quotient_OUT => QUOTIENT, -- Output for quotient (32-bit)
+			remainder_OUT => RESIDUE, -- Output for remainder (32-bit)
+			FIRIFG => FIRIFG,         -- Indicates an overflow condition
 
-			-- Data interface
-			FIRIN => FIRIN,             -- FIR input data
-			FIROUT => FIROUT,           -- FIR output data
-			
-			-- Coefficient interface
-			COEF0 => COEF3_0(7 downto 0),    -- Coefficient 0
-			COEF1 => COEF3_0(15 downto 8),   -- Coefficient 1
-			COEF2 => COEF3_0(23 downto 16),  -- Coefficient 2
-			COEF3 => COEF3_0(31 downto 24),  -- Coefficient 3
-			COEF4 => COEF7_4(7 downto 0),    -- Coefficient 4
-			COEF5 => COEF7_4(15 downto 8),   -- Coefficient 5
-			COEF6 => COEF7_4(23 downto 16),  -- Coefficient 6
-			COEF7 => COEF7_4(31 downto 24),  -- Coefficient 7
-			
-			-- Memory interface
-			Addr => AddressBus(11 DOWNTO 0),
-			FIRRead => MemReadBus,
-			FIRWrite => MemWriteBus,
-			
-			-- Interrupt control
-			FIRIFG_CLR => FIRIFG_CLR    -- Clear FIR interrupt flag
+			FIRCTL => FIRCTL,
+			FIRIN => FIRIN,
+			FIROUT => FIROUT,
+			FIRIFG_type => FIRIFG_type,
+			-- FIFO Status Outputs
+			FIFOFULL_flag => FIFOFULL_flag,  -- FIFO Full status flag
+			FIFOEMPTY_flag => FIFOEMPTY_flag, -- FIFO Empty status flag
+			COEF0 => COEF0,
+			COEF1 => COEF1,
+			COEF2 => COEF2,
+			COEF3 => COEF3,
+			COEF4 => COEF4,
+			COEF5 => COEF5,
+			COEF6 => COEF6,
+			COEF7 => COEF7
+
 		);
-
-	-- DIVIDER component (commented out to avoid GPIO conflicts)
-	-- div_acc: Divider
-	-- 	Port MAP(
-	-- 		clk => pll_out,          -- Clock signal
-	-- 		
-	-- 		Addr	=> AddressBus(11 DOWNTO 0),
-	-- 		DIVRead	=> MemReadBus,
-	-- 		
-	-- 		reset => resetSim,       -- Asynchronous reset signal
-	-- 		ena  => DIVENA,        -- Start signal to begin the division
-	-- 		dividend => DIVIDEND, -- Input for dividend (32-bit)
-	-- 		divisor => DIVISOR, -- Input for divisor (32-bit)
-	-- 		quotient_OUT => QUOTIENT, -- Output for quotient (32-bit)
-	-- 		remainder_OUT => RESIDUE, -- Output for remainder (32-bit)
-	-- 		DIVIFG => DIVIFG         -- Indicates an overflow condition
-	-- 	);
 	
 	
 	Basic_Timer: BTIMER
@@ -327,7 +298,7 @@ BEGIN
 		
 		
 	
-	IntrSrc	<=  FIRIFG_OUTREADY  & FIFOEMPTY & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
+	IntrSrc	<=  FIRIFG & (NOT KEY3) & (NOT KEY2) & (NOT KEY1) & BTIFG & '0' & '0';
 	Intr_Controller: INTERRUPT
 		GENERIC MAP(
 			DataBusSize	=> DataBusSize,
@@ -350,9 +321,8 @@ BEGIN
 			INTR_Active	=> INTR_Active,
 			CLR_IRQ_OUT	=> CLR_IRQ,
 		    GIE			=> GIE,
-			IFG 		=> IFG,
-			IntrEn		=> IntrEn,
-			FIRIFG_CLR	=> FIRIFG_CLR
+			FIRIFG_type => FIRIFG_type,
+			IFG 		=> IFG
 		);
 		
 		 m1: PLL port map(
@@ -360,6 +330,9 @@ BEGIN
 		  c0 => pll_out
 	   );
 
-	   
+		m2: PLL2 port map(
+			inclk0 => clock,
+			c0 => pll_out2
+		);
 	
 END structure;

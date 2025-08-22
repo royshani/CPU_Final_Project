@@ -29,10 +29,10 @@ package aux_package is
 		INTR				: IN	STD_LOGIC;
 		INTA				: OUT	STD_LOGIC;
 		INTR_Active			: IN	STD_LOGIC;
-		CLR_IRQ				: IN	STD_LOGIC_VECTOR(7 DOWNTO 0);
+		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
-		IFG				    : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-		IntrEn		     	: IN STD_LOGIC_VECTOR(7 DOWNTO 0)		);
+		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
 		end COMPONENT;
 
 	COMPONENT Ifetch IS
@@ -60,7 +60,7 @@ package aux_package is
 			SIGNAL ISRAddr			: IN	STD_LOGIC_VECTOR(31 DOWNTO 0));
 	END COMPONENT;
 
-		COMPONENT Idecode IS
+	COMPONENT Idecode IS
 	 PORT(	
 			read_data_1	: buffer 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
 			databus		: in 	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
@@ -83,13 +83,13 @@ package aux_package is
 			EPC			: IN	STD_LOGIC_VECTOR(7 DOWNTO 0);
 			INTR		: IN	STD_LOGIC;
 			INTR_Active	: IN	STD_LOGIC;
-			CLR_IRQ		: IN	STD_LOGIC_VECTOR(7 DOWNTO 0);
+			CLR_IRQ		: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 			jump        : IN 	STD_LOGIC;
 			clock,reset, ena	: IN 	STD_LOGIC;
-			IFG			: IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-			IntrEn		: IN STD_LOGIC_VECTOR(7 DOWNTO 0)
+			IFG			: IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+			IntrEn		: IN STD_LOGIC_VECTOR(6 DOWNTO 0)
 			);
-	END COMPONENT;
+END COMPONENT;
 
 	COMPONENT control IS
      PORT( 	
@@ -173,8 +173,7 @@ package aux_package is
 		AddressBus					: IN	STD_LOGIC_VECTOR(11 DOWNTO 0);
 		CS_LEDR, CS_SW, CS_KEY		: OUT 	STD_LOGIC;
 		CS_HEX0, CS_HEX1, CS_HEX2	: OUT 	STD_LOGIC;
-		CS_HEX3, CS_HEX4, CS_HEX5	: OUT 	STD_LOGIC;
-		CS_FIR		: OUT 	STD_LOGIC
+		CS_HEX3, CS_HEX4, CS_HEX5	: OUT 	STD_LOGIC
 		);
 	END COMPONENT;
 
@@ -230,7 +229,7 @@ package aux_package is
 	COMPONENT INTERRUPT IS
 	GENERIC(DataBusSize	: integer := 32;
 			AddrBusSize	: integer := 12;
-			IrqSize	    : integer := 8;
+			IrqSize	    : integer := 7;
 			RegSize		: integer := 8
 			);
 	PORT( 
@@ -240,78 +239,46 @@ package aux_package is
 			MemWriteBus	: IN	STD_LOGIC;
 			AddressBus	: IN	STD_LOGIC_VECTOR(AddrBusSize-1 DOWNTO 0);
 			DataBus		: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
-			IntrSrc		: IN	STD_LOGIC_VECTOR(7 DOWNTO 0); -- IRQ
+			IntrSrc		: IN	STD_LOGIC_VECTOR(6 DOWNTO 0); -- IRQ
 			ChipSelect	: IN	STD_LOGIC;
 			INTR		: OUT	STD_LOGIC;
 			INTA		: IN	STD_LOGIC;
-			IRQ_OUT		: OUT   STD_LOGIC_VECTOR(7 DOWNTO 0);
+			IRQ_OUT		: OUT   STD_LOGIC_VECTOR(6 DOWNTO 0);
 			INTR_Active	: OUT	STD_LOGIC;
-			CLR_IRQ_OUT	: OUT	STD_LOGIC_VECTOR(7 DOWNTO 0);
+			CLR_IRQ_OUT	: OUT	STD_LOGIC_VECTOR(6 DOWNTO 0);
 			GIE			: IN	STD_LOGIC;
-			IFG			: buffer STD_LOGIC_VECTOR(7 DOWNTO 0);
-			IntrEn		: buffer STD_LOGIC_VECTOR(7 DOWNTO 0);
-			FIRIFG_CLR	: OUT	STD_LOGIC
+			IFG			: buffer STD_LOGIC_VECTOR(6 DOWNTO 0);
+			FIRIFG_type	: IN	STD_LOGIC_VECTOR(1 DOWNTO 0); -- need to assign from my_fir through MCU
+			IntrEn		: buffer STD_LOGIC_VECTOR(6 DOWNTO 0)
 		);
 	END COMPONENT;
 
-COMPONENT FIR_Filter is
-    Port (
-        -- Clock and Reset
-        FIRCLK : in STD_LOGIC;          -- FIR core clock
-        FIFOCLK : in STD_LOGIC;         -- FIFO clock
-        FIRRST : in STD_LOGIC;          -- FIR core reset
-        FIFORST : in STD_LOGIC;         -- FIFO reset
-        
-        -- Control signals
-        FIRENA : in STD_LOGIC;          -- FIR core enable
-        FIFOWEN : in STD_LOGIC;         -- FIFO write enable
-        FIFOREN : in STD_LOGIC;         -- FIFO read enable
-        
-        -- Status signals
-        FIFOFULL : out STD_LOGIC;       -- FIFO full status
-        FIFOEMPTY : out STD_LOGIC;      -- FIFO empty status
-        FIRIFG : out STD_LOGIC;         -- FIR interrupt flag
-		FIRIFG_OUTREADY : out std_logic; -- NEW: asserts when FIROUT is valid
-
-        
-        -- Data interface
-        FIRIN : in STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
-        FIROUT : out STD_LOGIC_VECTOR(31 downto 0); -- FIR output data
-        
-        -- Coefficient interface
-        COEF0 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 0
-        COEF1 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 1
-        COEF2 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 2
-        COEF3 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 3
-        COEF4 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 4
-        COEF5 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 5
-        COEF6 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 6
-        COEF7 : in STD_LOGIC_VECTOR(7 downto 0);    -- Coefficient 7
-        
-        -- Memory interface
-        Addr : in STD_LOGIC_VECTOR(11 DOWNTO 0);
-        FIRRead : in STD_LOGIC;
-        FIRWrite : in STD_LOGIC;
-        
-        -- Interrupt control
-        FIRIFG_CLR : in STD_LOGIC       -- Clear FIR interrupt flag
-    );
-end COMPONENT;
-
 COMPONENT Divider is
      Port (
-        clk : in STD_LOGIC;          -- Clock signal
-		
+        FIFOCLK : in STD_LOGIC;          -- FIFO Clock signal
+        FIRCLK : in STD_LOGIC;          -- FIR Clock signal
 		Addr	: IN	STD_LOGIC_VECTOR(11 DOWNTO 0);
 		DIVRead	: IN	STD_LOGIC;
-		
         reset : in STD_LOGIC;        -- Asynchronous reset signal
         ena : in STD_LOGIC;        -- Start signal to begin the division
         dividend : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for dividend (32-bit)
         divisor : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for divisor (32-bit)
         quotient_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for quotient (32-bit)
         remainder_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for remainder (32-bit)
-		DIVIFG : buffer STD_LOGIC         -- Indicates an overflow condition
+		FIRIFG : buffer STD_LOGIC;         -- Indicates an overflow condition
+
+		-- ADDED FOR FIR!
+		FIRCTL   : inout  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
+		-- Data interface
+		FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
+		FIROUT   : out STD_LOGIC_VECTOR(31 downto 0);   -- FIR output data
+		FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0); -- added for fir!
+		-- FIFO Status Outputs
+		FIFOFULL_flag  : out STD_LOGIC;  -- FIFO Full status flag
+		FIFOEMPTY_flag : out STD_LOGIC;  -- FIFO Empty status flag
+		-- Coefficient interface
+		COEF0,COEF1,COEF2,COEF3,
+		COEF4,COEF5,COEF6,COEF7 : in STD_LOGIC_VECTOR(7 downto 0)  -- added for fir!
     );
 end COMPONENT;
 
@@ -322,6 +289,16 @@ COMPONENT PLL IS
 		areset		: IN STD_LOGIC  := '0';
 		inclk0		: IN STD_LOGIC  := '0';
 		c0		: OUT STD_LOGIC ;
+		locked		: OUT STD_LOGIC 
+	);
+END COMPONENT;
+
+COMPONENT PLL2 IS
+	PORT
+	(
+		areset		: IN STD_LOGIC  := '0';
+		inclk0		: IN STD_LOGIC  := '0';
+		c0			: OUT STD_LOGIC ;
 		locked		: OUT STD_LOGIC 
 	);
 END COMPONENT;

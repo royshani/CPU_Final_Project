@@ -15,10 +15,10 @@ entity Divider is
         reset   : in STD_LOGIC;        -- Asynchronous reset signal
         ena     : in STD_LOGIC;        -- Start signal to begin the division
         FIRIFG  : buffer STD_LOGIC := '0';         -- Indicates an overflow condition (changed from divifg)
-        FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0); -- added for fir!
+        FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0) := "00"; -- added for fir!
         DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         -- FIR control register is now inout
-        FIRCTL     : buffer STD_LOGIC_VECTOR(7 downto 0);
+        FIRCTL     : buffer STD_LOGIC_VECTOR(7 downto 0):= (others => '0');
 
         -- Data interface
         FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
@@ -48,6 +48,9 @@ architecture Behavioral of Divider is
 
     -- Define the states for the Finite State Machine (FSM)
     type state_type is (idle, STATE_FIFO, STATE_FIR);
+    -- Add FSM state type and signals
+    type firctl_state_type is (IDLE_FIRCTL, LOAD_FROM_DATABUS, MODIFY_FIRCTL);
+    signal firctl_state, firctl_next_state : firctl_state_type;
 
     -- Constants for FIR
     constant M : integer := 8;  -- Number of filter taps
@@ -58,18 +61,15 @@ architecture Behavioral of Divider is
     type delay_line is array (0 to M-1) of STD_LOGIC_VECTOR(W-1 downto 0);
     -- FIR signals
 --------------------------------------------------
-    -- SIGNAL FIFOWEN  : STD_LOGIC := '0'; -- added for fir!
-    -- SIGNAL FIFORST  : STD_LOGIC := '0'; -- added for fir!
-    -- SIGNAL FIFOFULL  : STD_LOGIC := '0'; -- added for fir!
-    -- SIGNAL FIFOEMPTY  : STD_LOGIC := '0'; -- added for fir!
-    -- SIGNAL FIRRST  : STD_LOGIC := '0'; -- added for fir!
-    -- SIGNAL FIRENA  : STD_LOGIC := '0'; -- added for fir!
+    signal databus_buffer : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
     SIGNAL FIFOREN  : STD_LOGIC := '0'; -- added for fir!
     signal fifowen_internal : STD_LOGIC := '0'; -- added for fir!
     signal FIRCTL_internal : STD_LOGIC_VECTOR(7 downto 0) := (others => '0'); -- added for fir!
     signal coefficients   : coeff_array := (others => (others => '0'));
     SIGNAL y_counter : unsigned(5 DOWNTO 0) := (others => '0'); -- added for fir!
     signal firout_ready : STD_LOGIC := '0'; -- added for fir!
+    signal fifoempty : STD_LOGIC := '0';
+    signal fifofull : STD_LOGIC := '0';
     -- Processing signals
     signal x_input        : STD_LOGIC_VECTOR(W-1 downto 0) := (others => '0');
     signal y_output       : STD_LOGIC_VECTOR(31 downto 0)  := (others => '0');
@@ -92,13 +92,11 @@ architecture Behavioral of Divider is
     signal sync_ff4    : std_logic := '0';  -- For FIFO->FIR handshake
 
 --------------------------------------------------
-    -- Alias for FIRCTL_internal bits
-    alias FIRENA is FIRCTL_internal(0);
-    alias FIRRST is FIRCTL_internal(1);
-    alias FIFOFULL is FIRCTL_internal(2);
-    alias FIFOEMPTY is FIRCTL_internal(3);
-    alias FIFORST is FIRCTL_internal(4);
-    alias FIFOWEN is FIRCTL_internal(5);
+    -- Alias for FIRCTL bits
+    alias FIRENA is FIRCTL(0);
+    alias FIRRST is FIRCTL(1);
+    alias FIFORST is FIRCTL(4);
+    alias FIFOWEN is FIRCTL(5);
     
     
     
@@ -131,8 +129,6 @@ begin
     begin
         if (reset='1') then
             state_reg <= idle; -- Reset the FSM to idle state
-            FIRRST <= '1'; -- NEW: Reset the FIR
-            FIFORST <= '1'; -- NEW: Reset the FIFO
         elsif (FIFOCLK'event and FIFOCLK='1') then
             state_reg <= state_next; -- Update the state register
         end if;
@@ -178,7 +174,7 @@ begin
                 elsif firout_ready = '1' then
                     FIRIFG_type <= "10";
                 else
-                    FIRIFG_type <= "10";
+                    FIRIFG_type <= "00";
                 end if;
 
                 if (FIRENA = '0') OR (FIRRST = '1') then
@@ -192,77 +188,6 @@ begin
         end case;
     end process;
     
------------------------------------------------------------------------------
--- UNUSED, HUSHED
-
-    -- -- Control path: Registers for the counter used to count iterations -- UNUSED, HUSHED
-    -- process(clk, reset)
-    -- begin
-    --     if (reset='1') then
-    --         i_reg <= (others => '0'); -- Reset the iteration counter
-    --     elsif (clk'event and clk='1') then
-    --         i_reg <= i_next; -- Update iteration counter
-    --     end if;
-    -- end process;
-
-
-    
-    -- -- Control path: Logic for the iteration counter -- UNUSED, HUSHED
-    -- process(state_reg, i_reg)
-    -- begin
-    --     case state_reg is
-    --         when idle =>
-    --             i_next <= (others => '0'); -- Initialize counter to zero in idle state
-                
-    --         when STATE_FIFO =>
-    --             i_next <= i_reg; -- Keep counter value during STATE_FIFOing
-                
-    --         when STATE_FIR =>
-    --             i_next <= i_reg + 1; -- Increment counter during STATE_FIR
-    --     end case;
-    -- end process;
-        
-    -- -- Data path: Registers used in the data path -- UNUSED, HUSHED
-    -- process(clk, reset)
-    -- begin
-    --     if (reset='1') then
-    --         z_reg <= (others => '0'); -- Reset the z register
-    --         divisor_reg <= (others => '0'); -- Reset the d register
-			
-    --     elsif (clk'event and clk='1') then
-    --         z_reg <= z_next; -- Update z register
-    --         divisor_reg <= divisor_next; -- Update d register
-    --     end if;
-    -- end process;
-    
-    -- -- Data path: Multiplexers of the data path (handle register assignments based on FSM state) -- UNUSED, HUSHED
-    -- process(state_reg, dividend, divisor, z_reg, divisor_reg, sub)
-    -- begin
-    --     divisor_next <= unsigned(divisor); -- Update divisor register
-    --     case state_reg is
-    --         when idle =>
-    --             z_next <=   "000000000000000000000000000000000" & unsigned(dividend); -- Initialize z with dividend in idle state (upper 32 bits are zero)
-                
-    --         when STATE_FIFO =>
-    --             z_next <= z_reg(63 downto 0) & '0'; -- STATE_FIFO left during STATE_FIFO state
-                
-    --         when STATE_FIR =>
-    --             if (z_reg(63 downto 32) < divisor_reg) then
-    --                 z_next <= z_reg; -- Keep z value if upper 32 bits are less than divisor
-    --             else
-    --                 z_next <= (z_reg(64 downto 32) - divisor_reg) & z_reg(31 downto 1) & '1'; -- Subtract divisor and update z with quotient bit
-    --             end if;
-    --     end case;
-    -- end process;
-    
-    -- -- Data path: Functional units for subtraction -- UNUSED, HUSHED
-    -- sub <= z_reg(64 downto 32) - divisor_reg; -- Perform subtraction STATE_FIR
-    
-    -- -- Data path: Output assignment
-    -- quotient <= std_logic_vector(z_reg(31 downto 0)); -- Assign quotient output
-    -- remainder <= std_logic_vector(z_reg(63 downto 32)); -- Assign remainder output
- -----------------------------------------------------------------------------   
-
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
 -- sync clock process
@@ -299,52 +224,53 @@ begin
             FIFOREN <= sync_ff1 xor sync_ff2;
         end if;
     end process;
-
-
 -----------------------------------------------------------------------------
 -- fifo state process
------------------------------------------------------------------------------
+----------------------------------------------------------------------------- 
 
     -----------------------------------------------------------------
-    -- 1. FIFO write process
-    -----------------------------------------------------------------
-    process(FIFOCLK, reset, FIFOWEN)
-    begin
-        if reset = '1' then
-            fifo_wr_ptr   <= 0;
-            fifo_count_wr <= 0;
-            
-        elsif rising_edge(FIFOCLK) then
-            if FIRCTL(5) = '1' and fifo_count < k then
-                fifo_memory(fifo_wr_ptr) <= FIRIN(W-1 downto 0);
-                fifo_wr_ptr   <= (fifo_wr_ptr + 1) mod k;
-                fifo_count_wr <= fifo_count_wr + 1;
-
-                -- auto clear control bit after use
-                FIRCTL_internal(5) <= '0';
-            end if;
-        end if;
-    end process;
-
-    -----------------------------------------------------------------
-    -- 2. FIFO count (synchronous update)
+    --1.  FIFO count (synchronous update)
     -----------------------------------------------------------------
     process(FIFOCLK, FIFORST)
     begin
         if FIFORST = '1' then
             fifo_count <= 0;
-            FIFOEMPTY <= '1';
-            FIFOFULL  <= '0';
         elsif rising_edge(FIFOCLK) then
             fifo_count <= fifo_count_wr - fifo_count_rd;
-            FIFOEMPTY <= '1' when fifo_count = 0 else '0';
-            FIFOFULL  <= '1' when fifo_count = k else '0';
+        end if;
+        if fifo_count = 0 then
+            fifoempty <= '1';
+        else
+            fifoempty <= '0';
+        end if;
+        if fifo_count = k then
+            fifofull <= '1';
+        else
+            fifofull <= '0';
         end if;
     end process;
 
+    -----------------------------------------------------------------
+    -- 2. FIFO write process
+    -----------------------------------------------------------------
+    process(FIFOCLK, FIFORST)
+    begin
+        if FIFORST = '1' then
+            fifo_wr_ptr   <= 0;
+            fifo_count_wr <= 0;
+
+        elsif rising_edge(FIFOCLK) then
+            if FIFOWEN = '1' and fifo_count < k then
+                fifo_memory(fifo_wr_ptr) <= FIRIN(W-1 downto 0);
+                fifo_wr_ptr   <= (fifo_wr_ptr + 1) mod k;
+                fifo_count_wr <= (fifo_count_wr + 1) mod (k+1);
+            end if;
+        end if;
+    end process;
+    
 -----------------------------------------------------------------------------
 -- fir state process
------------------------------------------------------------------------------
+----------------------------------------------------------------------------- 
     -----------------------------------------------------------------
     -- 1. fir read from FIFO process
     -----------------------------------------------------------------
@@ -401,39 +327,82 @@ begin
         end if;
     end process;
 
-
-    
---------------------------------------------------
--- FIR Control Register bit assignments based on FIRCTL
---------------------------------------------------
-
-    -- Update the interrupt flag register based on data from the MCU or the IRQ sources
-    FIRCTL		<=	DataBus(7 DOWNTO 0)	WHEN (Addr = X"82C" AND FIRCTLwrite = '1') ELSE
-    FIRCTL_internal;
-
-        -- Provide data to the MCU on the data bus based on the address and read signals
-    DataBus <= "000000000000000000000000"	& FIRCTL_internal	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
+-----------------------------------------------------------------------------
+-- firctl fsm control process
+----------------------------------------------------------------------------- 
+    -- Provide data to the MCU on the data bus based on the address and read signals
+    DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
     (OTHERS => 'Z'); 
 
-
+    -- FSM State Machine Process
     PROCESS(FIFOCLK, reset)
     BEGIN
         IF reset = '1' THEN
-            FIRCTL_internal <= (OTHERS => '0');
-        ELSIF rising_edge(FIFOCLK) THEN
-            -- Copy specific bits from FIRCTL to FIRCTL_internal
-            FIRCTL_internal(0) <= FIRCTL(0);  -- FIR Enable
-            FIRCTL_internal(1) <= FIRCTL(1);  -- FIR Reset
-            FIRCTL_internal(2) <= FIFOFULL;   -- FIFO Full status flag
-            FIRCTL_internal(3) <= FIFOEMPTY; -- FIFO Empty status flag
-            FIRCTL_internal(4) <= FIRCTL(4);  -- FIFO Reset
-            FIRCTL_internal(5) <= FIRCTL(5);  -- FIFO Write Enable
+            firctl_state <= IDLE_FIRCTL;
 
-            -- Bits 2,3 are read-only (FIFO status)
+            FIRCTL <= (OTHERS => '0');
+        ELSIF rising_edge(FIFOCLK) THEN
+            firctl_state <= firctl_next_state;
             
-            -- Bits 6,7 are unused
+            -- State-specific actions
+            CASE firctl_state IS
+                WHEN IDLE_FIRCTL => -- update fifo_count process
+                    if FIFOWEN = '1' then
+                        FIRCTL(5) <= '0';
+                    end if;
+                    
+                WHEN LOAD_FROM_DATABUS =>
+                    -- Load all bits from DataBus
+                    FIRCTL(7 downto 4) <= databus_buffer(7 downto 4);
+                    FIRCTL(1 downto 0) <= databus_buffer(1 downto 0);
+                    
+                WHEN MODIFY_FIRCTL =>
+                    -- Modify specific bits based on conditions
+                    FIRCTL(2) <= fifoempty;  -- FIFO Full
+                    FIRCTL(3) <= fifofull;  -- FIFO Empty
+                    -- FIRCTL(5) logic for FIFO write process
+                    FIRCTL(5) <= '0';
+            END CASE;
         END IF;
     END PROCESS;
+
+
+
+-----------------------------------------------------------------------------
+-- next state logic for firctl fsm
+----------------------------------------------------------------------------- 
+    -- Next State Logic
+    PROCESS(firctl_state, Addr, FIRCTLwrite, FIRCTL(5), fifo_count)
+    BEGIN
+        firctl_next_state <= firctl_state;  -- Default: stay in current state
+        
+        CASE firctl_state IS
+            WHEN IDLE_FIRCTL =>
+                -- Transition to LOAD when write condition is met
+                IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
+                    databus_buffer <= DataBus(7 DOWNTO 0);
+                    firctl_next_state <= LOAD_FROM_DATABUS;
+                ELSIF (FIFOWEN = '1' OR (firctl(2) = '0' AND fifo_count = 0) OR (firctl(3) = '0' AND fifo_count = k)) THEN
+
+                    firctl_next_state <= MODIFY_FIRCTL;
+                END IF;
+                
+                
+            WHEN LOAD_FROM_DATABUS =>
+                IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
+                    databus_buffer <= DataBus(7 DOWNTO 0);
+                else 
+                firctl_next_state <= IDLE_FIRCTL;
+                END IF;
+                
+            WHEN MODIFY_FIRCTL =>
+                -- Return to IDLE after modification
+                firctl_next_state <= IDLE_FIRCTL;
+                
+        END CASE;
+    END PROCESS;
+
+
     FIROUT <= y_output;
      -----------------------------------------------------------------
     -- Load coefficients

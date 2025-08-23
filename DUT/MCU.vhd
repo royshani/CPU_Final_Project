@@ -66,9 +66,6 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL FIRIFG		:	STD_LOGIC := '0';
 	SIGNAL DIVENA		:	STD_LOGIC  := '0';
 	
-	-- FIFO Status signals
-	SIGNAL FIFOFULL_flag	:	STD_LOGIC := '0';
-	SIGNAL FIFOEMPTY_flag	:	STD_LOGIC := '0';
 
 	-- FIR --
 	SIGNAL FIRCTL		:	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
@@ -190,9 +187,6 @@ BEGIN
 				BTCCR1 <= DataBus; -- BTCCR1 is the counter value for the basic timer
 			END IF;
 			
-			-- if(AddressBus(11 DOWNTO 0) = X"82C" AND MemWriteBus = '1') then
-			-- 	FIRCTL <= DataBus(7 DOWNTO 0); -- FIRCTL is the control register for the FIR
-			-- END IF;
 			
 			if(AddressBus(11 DOWNTO 0) = X"830" AND MemWriteBus = '1') then
 				FIRIN <= DataBus; -- FIRIN is the input data for the FIR

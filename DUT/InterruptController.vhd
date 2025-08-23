@@ -49,6 +49,8 @@ BEGIN
 INTR_Active	<= 	IFG(0) OR IFG(1) OR IFG(2) OR
 				IFG(3) OR IFG(4) OR IFG(5) OR IFG(6);
 
+
+
 -- Assign the interrupt vector based on which interrupt flag is set
 TypeReg	<= 	X"00" WHEN reset  = '1' ELSE -- main
 			X"10" WHEN IFG(2) = '1' ELSE -- Basic timer
@@ -60,13 +62,14 @@ TypeReg	<= 	X"00" WHEN reset  = '1' ELSE -- main
 			(OTHERS => 'Z');
 
 
--- Update the interrupt flag register based on data from the MCU or the IRQ sources
-IFG		<=	DataBus(6 DOWNTO 0)	WHEN (AddressBus = X"841" AND MemWriteBus = '1') ELSE
-			IRQ AND IntrEn;		
+
 -- Update the interrupt type register based on data from the MCU
 TypeReg	<=	DataBus(RegSize-1 DOWNTO 0)	WHEN (AddressBus = X"842" AND MemWriteBus = '1') ELSE
 			(OTHERS => 'Z');
 			
+-- Update the interrupt flag register based on data from the MCU or the IRQ sources
+IFG		<=	DataBus(6 DOWNTO 0)	WHEN (AddressBus = X"841" AND MemWriteBus = '1') ELSE
+			IRQ AND IntrEn;		
 -- Clear the IRQ signals when the interrupt acknowledge is received
 
 CLR_IRQ(2) <= '0' WHEN (TypeReg = X"10" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';

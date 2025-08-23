@@ -334,73 +334,85 @@ begin
     DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
     (OTHERS => 'Z'); 
 
-    -- FSM State Machine Process
-    PROCESS(FIFOCLK, reset)
-    BEGIN
-        IF reset = '1' THEN
-            firctl_state <= IDLE_FIRCTL;
+    -- -- FSM State Machine Process
+    -- PROCESS(FIFOCLK, reset)
+    -- BEGIN
+    --     IF reset = '1' THEN
+    --         firctl_state <= IDLE_FIRCTL;
 
-            FIRCTL <= (OTHERS => '0');
-        ELSIF rising_edge(FIFOCLK) THEN
-            firctl_state <= firctl_next_state;
+    --         FIRCTL <= (OTHERS => '0');
+    --     ELSIF rising_edge(FIFOCLK) THEN
+    --         firctl_state <= firctl_next_state;
             
-            -- State-specific actions
-            CASE firctl_state IS
-                WHEN IDLE_FIRCTL => -- update fifo_count process
-                    if FIFOWEN = '1' then
-                        FIRCTL(5) <= '0';
-                    end if;
+    --         -- State-specific actions
+    --         CASE firctl_state IS
+    --             WHEN IDLE_FIRCTL => -- update fifo_count process
+    --                 if FIFOWEN = '1' then
+    --                     FIRCTL(5) <= '0';
+    --                 end if;
                     
-                WHEN LOAD_FROM_DATABUS =>
-                    -- Load all bits from DataBus
-                    FIRCTL(7 downto 4) <= databus_buffer(7 downto 4);
-                    FIRCTL(1 downto 0) <= databus_buffer(1 downto 0);
+    --             WHEN LOAD_FROM_DATABUS =>
+    --                 -- Load all bits from DataBus
+    --                 FIRCTL(7 downto 4) <= databus_buffer(7 downto 4);
+    --                 FIRCTL(1 downto 0) <= databus_buffer(1 downto 0);
                     
-                WHEN MODIFY_FIRCTL =>
-                    -- Modify specific bits based on conditions
-                    FIRCTL(2) <= fifoempty;  -- FIFO Full
-                    FIRCTL(3) <= fifofull;  -- FIFO Empty
-                    -- FIRCTL(5) logic for FIFO write process
-                    FIRCTL(5) <= '0';
-            END CASE;
-        END IF;
-    END PROCESS;
+    --             WHEN MODIFY_FIRCTL =>
+    --                 -- Modify specific bits based on conditions
+    --                 FIRCTL(2) <= fifoempty;  -- FIFO Full
+    --                 FIRCTL(3) <= fifofull;  -- FIFO Empty
+    --                 -- FIRCTL(5) logic for FIFO write process
+    --                 FIRCTL(5) <= '0';
+    --         END CASE;
+    --     END IF;
+    -- END PROCESS;
 
+    process(FIFOCLK, reset,addr,FIRCTLwrite,fifowen,fifo_count)
+        begin
+            if (Addr = X"82C" AND FIRCTLwrite = '1') THEN
+                FIRCTL(7 downto 4) <= DataBus(7 downto 4);
+                FIRCTL(1 downto 0) <= DataBus(1 downto 0);
+            elsif (FIFOWEN = '1' OR (firctl(2) = '0' AND fifo_count = 0) OR (firctl(3) = '0' AND fifo_count = k)) THEN
+                -- Modify specific bits based on conditions
+                FIRCTL(2) <= fifoempty;  -- FIFO Full
+                FIRCTL(3) <= fifofull;  -- FIFO Empty
+                -- FIRCTL(5) logic for FIFO write process
+                FIRCTL(5) <= '0';
+            end if;
+        end process;
 
-
------------------------------------------------------------------------------
--- next state logic for firctl fsm
------------------------------------------------------------------------------ 
-    -- Next State Logic
-    PROCESS(firctl_state, Addr, FIRCTLwrite, FIRCTL(5), fifo_count)
-    BEGIN
-        firctl_next_state <= firctl_state;  -- Default: stay in current state
+-- -----------------------------------------------------------------------------
+-- -- next state logic for firctl fsm
+-- ----------------------------------------------------------------------------- 
+--     -- Next State Logic
+--     PROCESS(firctl_state, Addr, FIRCTLwrite, FIRCTL(5), fifo_count)
+--     BEGIN
+--         firctl_next_state <= firctl_state;  -- Default: stay in current state
         
-        CASE firctl_state IS
-            WHEN IDLE_FIRCTL =>
-                -- Transition to LOAD when write condition is met
-                IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
-                    databus_buffer <= DataBus(7 DOWNTO 0);
-                    firctl_next_state <= LOAD_FROM_DATABUS;
-                ELSIF (FIFOWEN = '1' OR (firctl(2) = '0' AND fifo_count = 0) OR (firctl(3) = '0' AND fifo_count = k)) THEN
+--         CASE firctl_state IS
+--             WHEN IDLE_FIRCTL =>
+--                 -- Transition to LOAD when write condition is met
+--                 IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
+--                     databus_buffer <= DataBus(7 DOWNTO 0);
+--                     firctl_next_state <= LOAD_FROM_DATABUS;
+--                 ELSIF (FIFOWEN = '1' OR (firctl(2) = '0' AND fifo_count = 0) OR (firctl(3) = '0' AND fifo_count = k)) THEN
 
-                    firctl_next_state <= MODIFY_FIRCTL;
-                END IF;
+--                     firctl_next_state <= MODIFY_FIRCTL;
+--                 END IF;
                 
                 
-            WHEN LOAD_FROM_DATABUS =>
-                IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
-                    databus_buffer <= DataBus(7 DOWNTO 0);
-                else 
-                firctl_next_state <= IDLE_FIRCTL;
-                END IF;
+--             WHEN LOAD_FROM_DATABUS =>
+--                 IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
+--                     databus_buffer <= DataBus(7 DOWNTO 0);
+--                 else 
+--                 firctl_next_state <= IDLE_FIRCTL;
+--                 END IF;
                 
-            WHEN MODIFY_FIRCTL =>
-                -- Return to IDLE after modification
-                firctl_next_state <= IDLE_FIRCTL;
+--             WHEN MODIFY_FIRCTL =>
+--                 -- Return to IDLE after modification
+--                 firctl_next_state <= IDLE_FIRCTL;
                 
-        END CASE;
-    END PROCESS;
+--         END CASE;
+--     END PROCESS;
 
 
     FIROUT <= y_output;

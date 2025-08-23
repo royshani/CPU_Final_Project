@@ -190,9 +190,9 @@ BEGIN
 				BTCCR1 <= DataBus; -- BTCCR1 is the counter value for the basic timer
 			END IF;
 			
-			if(AddressBus(11 DOWNTO 0) = X"82C" AND MemWriteBus = '1') then
-				FIRCTL <= DataBus(7 DOWNTO 0); -- FIRCTL is the control register for the FIR
-			END IF;
+			-- if(AddressBus(11 DOWNTO 0) = X"82C" AND MemWriteBus = '1') then
+			-- 	FIRCTL <= DataBus(7 DOWNTO 0); -- FIRCTL is the control register for the FIR
+			-- END IF;
 			
 			if(AddressBus(11 DOWNTO 0) = X"830" AND MemWriteBus = '1') then
 				FIRIN <= DataBus; -- FIRIN is the input data for the FIR
@@ -221,15 +221,7 @@ BEGIN
 		END IF;
 	END PROCESS;
 	
-	-- Process to update FIRCTL with FIFO status
-	PROCESS(pll_out)
-	BEGIN
-		if (falling_edge(pll_out)) then
-			-- Update FIRCTL bits 2 and 3 with FIFO status
-			FIRCTL(2) <= FIFOEMPTY_flag;  -- FIFO Empty status
-			FIRCTL(3) <= FIFOFULL_flag;   -- FIFO Full status
-		END IF;
-	END PROCESS;
+
 	
 	----
 	BTCNT	<= DataBus		WHEN (AddressBus(11 DOWNTO 0) = X"820" AND MemWriteBus = '1') ELSE
@@ -251,8 +243,9 @@ BEGIN
 			FIFOCLK => pll_out,          -- FIFO Clock signal
 			FIRCLK => pll_out2,          -- FIR Clock signal
 			Addr	=> AddressBus(11 DOWNTO 0),
-			DIVRead	=> MemReadBus,
-			
+			FIRCTLread	=> MemReadBus,
+			FIRCTLwrite	=> MemWriteBus,
+			DataBus		=> DataBus,
 			reset => resetSim,       -- Asynchronous reset signal
 			ena  => DIVENA,        -- Start signal to begin the division
 			dividend => DIVIDEND, -- Input for dividend (32-bit)
@@ -265,9 +258,8 @@ BEGIN
 			FIRIN => FIRIN,
 			FIROUT => FIROUT,
 			FIRIFG_type => FIRIFG_type,
-			-- FIFO Status Outputs
-			FIFOFULL_flag => FIFOFULL_flag,  -- FIFO Full status flag
-			FIFOEMPTY_flag => FIFOEMPTY_flag, -- FIFO Empty status flag
+
+
 			COEF0 => COEF0,
 			COEF1 => COEF1,
 			COEF2 => COEF2,

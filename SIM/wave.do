@@ -125,7 +125,7 @@ add wave -noupdate -group GPIO /mcu_tb/U_0/IO_interface/ChipSelect
 add wave -noupdate -group GPIO /mcu_tb/U_0/IO_interface/OADAddr
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/clk
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/Addr
-add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/DIVRead
+add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/FIRCTLread
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/reset
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/ena
 add wave -noupdate -expand -group DIV /mcu_tb/U_0/div_acc/dividend

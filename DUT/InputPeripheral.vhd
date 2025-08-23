@@ -10,7 +10,7 @@ ENTITY InputPeripheral IS
 	GENERIC(DataBusSize	: integer := 32);
 	PORT( 
 		MemRead		: IN	STD_LOGIC;
-		GPIO_CS	: IN 	STD_LOGIC;
+		GPIO_CS		: IN 	STD_LOGIC;
 		INTA		: IN	STD_LOGIC;
 		Data		: OUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		GPInput		: IN	STD_LOGIC_VECTOR(7 DOWNTO 0)

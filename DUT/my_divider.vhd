@@ -16,16 +16,14 @@ entity Divider is
         ena     : in STD_LOGIC;        -- Start signal to begin the division
         FIRIFG  : buffer STD_LOGIC := '0';         -- Indicates an overflow condition (changed from divifg)
         FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0); -- added for fir!
-        
+        DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         -- FIR control register is now inout
-        FIRCTL     : inout STD_LOGIC_VECTOR(7 downto 0);
+        FIRCTL     : buffer STD_LOGIC_VECTOR(7 downto 0);
 
         -- Data interface
         FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
         FIROUT   : out STD_LOGIC_VECTOR(31 downto 0) := (others => '1');   -- FIR output data
-        -- FIFO Status Outputs
-        FIFOFULL_flag  : out STD_LOGIC;  -- FIFO Full status flag
-        FIFOEMPTY_flag : out STD_LOGIC;  -- FIFO Empty status flag
+
 
         -- Coefficient interface
         COEF0,COEF1,COEF2,COEF3,
@@ -38,7 +36,8 @@ entity Divider is
         divisor : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for divisor (32-bit)
         quotient_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for quotient (32-bit)
         remainder_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for remainder (32-bit)
-        DIVRead	: IN	STD_LOGIC
+        FIRCTLread	: IN	STD_LOGIC;
+        FIRCTLwrite	: IN	STD_LOGIC
 --------------------------------------------------
     );
 end Divider;
@@ -59,15 +58,15 @@ architecture Behavioral of Divider is
     type delay_line is array (0 to M-1) of STD_LOGIC_VECTOR(W-1 downto 0);
     -- FIR signals
 --------------------------------------------------
-    SIGNAL FIFOWEN  : STD_LOGIC := '0'; -- added for fir!
-    SIGNAL FIFORST  : STD_LOGIC := '0'; -- added for fir!
-    SIGNAL FIFOFULL  : STD_LOGIC := '0'; -- added for fir!
-    SIGNAL FIFOEMPTY  : STD_LOGIC := '0'; -- added for fir!
-    SIGNAL FIRRST  : STD_LOGIC := '0'; -- added for fir!
-    SIGNAL FIRENA  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIFOWEN  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIFORST  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIFOFULL  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIFOEMPTY  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIRRST  : STD_LOGIC := '0'; -- added for fir!
+    -- SIGNAL FIRENA  : STD_LOGIC := '0'; -- added for fir!
     SIGNAL FIFOREN  : STD_LOGIC := '0'; -- added for fir!
     signal fifowen_internal : STD_LOGIC := '0'; -- added for fir!
-
+    signal FIRCTL_internal : STD_LOGIC_VECTOR(7 downto 0) := (others => '0'); -- added for fir!
     signal coefficients   : coeff_array := (others => (others => '0'));
     SIGNAL y_counter : unsigned(5 DOWNTO 0) := (others => '0'); -- added for fir!
     signal firout_ready : STD_LOGIC := '0'; -- added for fir!
@@ -93,8 +92,18 @@ architecture Behavioral of Divider is
     signal sync_ff4    : std_logic := '0';  -- For FIFO->FIR handshake
 
 --------------------------------------------------
-
-
+    -- Alias for FIRCTL_internal bits
+    alias FIRENA is FIRCTL_internal(0);
+    alias FIRRST is FIRCTL_internal(1);
+    alias FIFOFULL is FIRCTL_internal(2);
+    alias FIFOEMPTY is FIRCTL_internal(3);
+    alias FIFORST is FIRCTL_internal(4);
+    alias FIFOWEN is FIRCTL_internal(5);
+    
+    
+    
+    
+    
     -- Signals for FSM state registers and next state values
     signal state_reg, state_next : state_type;   
     -- Registers for intermediate values during the division
@@ -299,7 +308,7 @@ begin
     -----------------------------------------------------------------
     -- 1. FIFO write process
     -----------------------------------------------------------------
-    process(FIFOCLK, reset)
+    process(FIFOCLK, reset, FIFOWEN)
     begin
         if reset = '1' then
             fifo_wr_ptr   <= 0;
@@ -312,7 +321,7 @@ begin
                 fifo_count_wr <= fifo_count_wr + 1;
 
                 -- auto clear control bit after use
-                FIRCTL(5) <= '0';
+                FIRCTL_internal(5) <= '0';
             end if;
         end if;
     end process;
@@ -398,16 +407,33 @@ begin
 -- FIR Control Register bit assignments based on FIRCTL
 --------------------------------------------------
 
-    -- FIR Control Register bit assignments (inputs from FIRCTL)
-    FIRENA <= FIRCTL(0);      -- FIR Enable (bit 0)
-    FIRRST <= FIRCTL(1);      -- FIR Reset (bit 1)  
-    FIFORST <= FIRCTL(4);     -- FIFO Reset (bit 4)
-    FIFOWEN <= FIRCTL(5);     -- FIFO Write Enable (bit 5)
-    -- FIRCTL(2), FIRCTL(3) are read only, and not used here FIRCTL(6), FIRCTL(7) are unused
+    -- Update the interrupt flag register based on data from the MCU or the IRQ sources
+    FIRCTL		<=	DataBus(7 DOWNTO 0)	WHEN (Addr = X"82C" AND FIRCTLwrite = '1') ELSE
+    FIRCTL_internal;
 
-    -- FIFO Status Outputs (actual FIFO state, not from FIRCTL)
-    FIFOFULL_flag <= FIFOFULL;   -- FIFO Full status flag
-    FIFOEMPTY_flag <= FIFOEMPTY; -- FIFO Empty status flag
+        -- Provide data to the MCU on the data bus based on the address and read signals
+    DataBus <= "000000000000000000000000"	& FIRCTL_internal	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
+    (OTHERS => 'Z'); 
+
+
+    PROCESS(FIFOCLK, reset)
+    BEGIN
+        IF reset = '1' THEN
+            FIRCTL_internal <= (OTHERS => '0');
+        ELSIF rising_edge(FIFOCLK) THEN
+            -- Copy specific bits from FIRCTL to FIRCTL_internal
+            FIRCTL_internal(0) <= FIRCTL(0);  -- FIR Enable
+            FIRCTL_internal(1) <= FIRCTL(1);  -- FIR Reset
+            FIRCTL_internal(2) <= FIFOFULL;   -- FIFO Full status flag
+            FIRCTL_internal(3) <= FIFOEMPTY; -- FIFO Empty status flag
+            FIRCTL_internal(4) <= FIRCTL(4);  -- FIFO Reset
+            FIRCTL_internal(5) <= FIRCTL(5);  -- FIFO Write Enable
+
+            -- Bits 2,3 are read-only (FIFO status)
+            
+            -- Bits 6,7 are unused
+        END IF;
+    END PROCESS;
     FIROUT <= y_output;
      -----------------------------------------------------------------
     -- Load coefficients

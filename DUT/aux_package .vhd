@@ -258,7 +258,9 @@ COMPONENT Divider is
         FIFOCLK : in STD_LOGIC;          -- FIFO Clock signal
         FIRCLK : in STD_LOGIC;          -- FIR Clock signal
 		Addr	: IN	STD_LOGIC_VECTOR(11 DOWNTO 0);
-		DIVRead	: IN	STD_LOGIC;
+		FIRCTLread	: IN	STD_LOGIC;
+		FIRCTLwrite	: IN	STD_LOGIC;
+		DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         reset : in STD_LOGIC;        -- Asynchronous reset signal
         ena : in STD_LOGIC;        -- Start signal to begin the division
         dividend : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for dividend (32-bit)
@@ -268,14 +270,12 @@ COMPONENT Divider is
 		FIRIFG : buffer STD_LOGIC;         -- Indicates an overflow condition
 
 		-- ADDED FOR FIR!
-		FIRCTL   : inout  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
+		FIRCTL   : buffer  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
 		-- Data interface
 		FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
 		FIROUT   : out STD_LOGIC_VECTOR(31 downto 0);   -- FIR output data
 		FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0); -- added for fir!
-		-- FIFO Status Outputs
-		FIFOFULL_flag  : out STD_LOGIC;  -- FIFO Full status flag
-		FIFOEMPTY_flag : out STD_LOGIC;  -- FIFO Empty status flag
+
 		-- Coefficient interface
 		COEF0,COEF1,COEF2,COEF3,
 		COEF4,COEF5,COEF6,COEF7 : in STD_LOGIC_VECTOR(7 downto 0)  -- added for fir!

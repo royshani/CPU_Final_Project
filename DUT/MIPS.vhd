@@ -32,7 +32,7 @@ ENTITY MIPS IS
 		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
-		
+		FIRIFG				: IN STD_LOGIC;
 		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
 		
 END 	MIPS;
@@ -333,7 +333,7 @@ BEGIN
 		ELSIF INTR_Active = '0' THEN
 			isr_count := 0;
 		
-		ELSIF (falling_edge(clock)) THEN
+		ELSIF (rising_edge(clock)) THEN
 			IF (INTR_STATE = "00") THEN
 				IF (INTR = '1') THEN
 					INTA_sig	<= '0';
@@ -352,7 +352,8 @@ BEGIN
 				IF IFG(6) = '0' THEN
 					Read_ISR_PC	<= '1';
 					isr_count := 0;
-				ELSIF (isr_count = 0 AND IFG(6) = '1') THEN
+				--ELSIF (isr_count = 0 AND IFG(6) = '1') THEN
+				elsif IFG(6) = '1' and FIRIFG = '1' THEN
 					Read_ISR_PC	<= '1';
 					isr_count := isr_count + 1;
 				END IF;

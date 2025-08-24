@@ -136,60 +136,66 @@ begin
 
 
     -- Control path: Logic to determine the next state of the FSM
-    process(state_reg, ena, FIFOWEN, FIRENA, FIFORST, FIFOFULL, FIFOEMPTY, FIRRST)
-    begin
-        case state_reg is 
-            when idle => 
-				-- else
-				-- 	FIRIFG <= '0';
-				-- end if;-- NEW: added firout_ready and fifoempty firifg logic, need to check if this is correct
-                if (FIFOWEN='1') then
-                    state_next <= STATE_FIFO; -- Move to STATE_FIFO state if FIFO ENABLED is asserted
-                elsif (FIFOREN = '1') then
-                    state_next <= STATE_FIR; -- Move to STATE_FIR state if FIR ENABLED is asserted
-                else
-                    state_next <= idle; -- Stay in idle state if not started
-                end if;
+    -- process(state_reg, ena, FIFOWEN, FIRENA, FIFORST, FIFOFULL, FIFOEMPTY, FIRRST)
+    -- begin
+    --     case state_reg is 
+    --         when idle => 
+	-- 			-- else
+	-- 			-- 	FIRIFG <= '0';
+	-- 			-- end if;-- NEW: added firout_ready and fifoempty firifg logic, need to check if this is correct
+    --             if (FIFOWEN='1') then
+    --                 state_next <= STATE_FIFO; -- Move to STATE_FIFO state if FIFO ENABLED is asserted
+    --             elsif (FIFOREN = '1') then
+    --                 state_next <= STATE_FIR; -- Move to STATE_FIR state if FIR ENABLED is asserted
+    --             else
+    --                 state_next <= idle; -- Stay in idle state if not started
+    --             end if;
                         
-            when STATE_FIFO =>
-                if FIFORST = '1' or FIFOFULL = '1' then
-                    state_next <= idle; -- Return to idle state when done   
-                elsif FIFOREN = '1' then
-                    state_next <= STATE_FIR; -- Move to STATE_FIR state after STATE_FIFOing
-                else
-                    state_next <= STATE_FIFO; -- Continue STATE_FIFOing
-                end if;
-				-- if(i_reg = i_next) then --  HANAN turns of firifg in itcm line FIR_STP section
-				-- 	FIRIFG <= '0';
-				-- end if;
+    --         when STATE_FIFO =>
+    --             if FIFORST = '1' or FIFOFULL = '1' then
+    --                 state_next <= idle; -- Return to idle state when done   
+    --             elsif FIFOREN = '1' then
+    --                 state_next <= STATE_FIR; -- Move to STATE_FIR state after STATE_FIFOing
+    --             else
+    --                 state_next <= STATE_FIFO; -- Continue STATE_FIFOing
+    --             end if;
                 
-            when STATE_FIR =>
+    --         when STATE_FIR =>
 
-                if firout_ready = '1' or FIFOEMPTY = '1' then
-                    FIRIFG <= '1';
-                end if;
+    --             if firout_ready = '1' or FIFOEMPTY = '1' then
+    --                 FIRIFG <= '1';
+    --             end if;
                 
-                -- need to verify logic for firifg_type
-                if fifoempty = '1' then
-                    FIRIFG_type <= "01";
-                elsif firout_ready = '1' then
-                    FIRIFG_type <= "10";
-                else
-                    FIRIFG_type <= "00";
-                end if;
-
-                if (FIRENA = '0') OR (FIRRST = '1') then
-                    state_next <= idle; -- Return to idle state when done
-                elsif FIFOEMPTY = '1' and firout_ready = '1' then
-                    state_next <= idle; -- Continue STATE_FIFOing
-                elsif FIFOWEN = '1' then
-                    state_next <= STATE_FIFO;
-                else
-                    state_next <= STATE_FIR; -- Continue STATE_FIRing
-                end if;
-                
-        end case;
+    --             -- need to verify logic for firifg_type
+    process(FIFOCLK, reset)
+    begin
+        if reset = '1' then
+            FIRIFG_type <= "00";
+        elsif rising_edge(FIFOCLK) then
+            if fifoempty = '1' then
+                FIRIFG_type <= "01";
+            elsif firout_ready = '1' then
+                FIRIFG_type <= "10";
+            else
+                FIRIFG_type <= "00";
+            end if;
+        end if;
     end process;
+
+    FIRIFG <= FIRENA and (firout_ready or fifoempty);
+
+    --             if (FIRENA = '0') OR (FIRRST = '1') then
+    --                 state_next <= idle; -- Return to idle state when done
+    --             elsif FIFOEMPTY = '1' and firout_ready = '1' then
+    --                 state_next <= idle; -- Continue STATE_FIFOing
+    --             elsif FIFOWEN = '1' then
+    --                 state_next <= STATE_FIFO;
+    --             else
+    --                 state_next <= STATE_FIR; -- Continue STATE_FIRing
+    --             end if;
+                
+    --     end case;
+    -- end process;
     
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
@@ -318,7 +324,7 @@ begin
             if FIFOREN = '1' then
                 -- shift delay line
                 for i in M-1 downto 1 loop
-                    report "inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+                    --report "inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
                     x_delay(i) <= x_delay(i-1);
                 end loop;
                 x_delay(0) <= x_input;
@@ -328,6 +334,7 @@ begin
                 for i in 0 to M-1 loop
                     temp_mul := signed(x_delay(i)) * signed(coefficients(i));
                     temp_sum := temp_sum + temp_mul;
+                    report "temp_sum: " & integer'image(to_integer(temp_sum));
                 end loop;
                 -- take upper 32 bits
                 y_output <= std_logic_vector(temp_sum(55 downto 24));

@@ -32,7 +32,9 @@ package aux_package is
 		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
-		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
+		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+		FIRIFG				: IN STD_LOGIC
+		);
 		end COMPONENT;
 
 	COMPONENT Ifetch IS

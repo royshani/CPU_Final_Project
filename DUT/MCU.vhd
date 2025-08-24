@@ -121,7 +121,8 @@ BEGIN
 					CLR_IRQ		=> CLR_IRQ,
 					DataBus		=> DataBus,
 					IFG			=> IFG,
-					IntrEn      => IntrEn
+					IntrEn      => IntrEn,
+					FIRIFG => FIRIFG
 		);
 		
 	

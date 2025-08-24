@@ -14,25 +14,25 @@ ENTITY Ifetch IS
 			 SIM 		: BOOLEAN
 			 );
 			 
-	PORT(	SIGNAL ena				: IN 	STD_LOGIC; 
-			SIGNAL Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
-        	SIGNAL PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-			SIGNAL PC_plus_4_jr_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-        	SIGNAL Add_result 		: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
-			SIGNAL jump_address 	: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
-			SIGNAL Ainput    		: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-        	SIGNAL Branch 			: IN 	STD_LOGIC;
-			SIGNAL Branch_not_equal : IN 	STD_LOGIC;
-			SIGNAL jump_register    : IN 	STD_LOGIC;
-        	SIGNAL Zero 			: IN 	STD_LOGIC;
-			SIGNAL jump             : IN 	STD_LOGIC;
-      		SIGNAL PC_out 			: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
-        	SIGNAL clock, reset 	: IN 	STD_LOGIC;
+	PORT(	ena				: IN 	STD_LOGIC; 
+			Instruction 		: OUT	STD_LOGIC_VECTOR( 31 DOWNTO 0 );
+        	PC_plus_4_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+			PC_plus_4_jr_out 	: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	Add_result 		: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			jump_address 	: IN 	STD_LOGIC_VECTOR( 7 DOWNTO 0 );
+			Ainput    		: IN 	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	Branch 			: IN 	STD_LOGIC;
+			Branch_not_equal : IN 	STD_LOGIC;
+			jump_register    : IN 	STD_LOGIC;
+        	Zero 			: IN 	STD_LOGIC;
+			jump             : IN 	STD_LOGIC;
+      		PC_out 			: OUT	STD_LOGIC_VECTOR( 9 DOWNTO 0 );
+        	clock, reset 	: IN 	STD_LOGIC;
 			
-			SIGNAL INTA				: IN	STD_LOGIC;
-			SIGNAL Read_ISR_PC		: IN	STD_LOGIC;
-			SIGNAL HOLD_PC			: IN 	STD_LOGIC;
-			SIGNAL ISRAddr			: IN	STD_LOGIC_VECTOR(31 DOWNTO 0));
+			INTA				: IN	STD_LOGIC;
+			Read_ISR_PC		: IN	STD_LOGIC;
+			HOLD_PC			: IN 	STD_LOGIC;
+			ISRAddr			: IN	STD_LOGIC_VECTOR(31 DOWNTO 0));
 END Ifetch;
 ----------------------------------------
 -- Architecture Definition

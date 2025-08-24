@@ -32,6 +32,7 @@ ENTITY MIPS IS
 		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+		
 		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
 		
 END 	MIPS;
@@ -181,7 +182,7 @@ END COMPONENT;
 	SIGNAL INTR_OneCycle										: STD_LOGIC;
 	SIGNAL HOLD_PC												: STD_LOGIC;
 	SIGNAL STATE 												: STD_LOGIC;
-	
+	SIGNAL SET_ISR_ONCE											: STD_LOGIC:='0';
 	
 BEGIN
 	
@@ -304,7 +305,7 @@ BEGIN
 						
 	DataBus			<= read_data_2 	WHEN (ALU_result(11) = '1' AND MemWrite = '1') ELSE 
 					   (OTHERS => 'Z');	-- GPIO OUTPUT
-	
+
 	MemAddr 		<= DataBus 	WHEN (INTA_sig = '0') ELSE 
 						ALU_result;
 						
@@ -314,11 +315,12 @@ BEGIN
 				
 	---------- INTERRUPT ----------
 	------ INTA and ISR Addr ------
-	INTA	<= INTA_sig;
+	INTA	 <= INTA_sig;
 	
-	PROCESS (clock, INTR, reset)
-		VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
 
+	PROCESS (clock, INTR, reset, INTR_Active)
+		VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
+		VARIABLE isr_count 	: INTEGER := 0;
 	BEGIN
 		IF reset = '1' THEN
 			INTR_STATE 	:= "00";
@@ -326,8 +328,12 @@ BEGIN
 			Read_ISR_PC	<= '0';
 			HOLD_PC		<= '0';
 			STATE <= '0';
+			isr_count := 0;
+
+		ELSIF INTR_Active = '0' THEN
+			isr_count := 0;
 		
-		ELSIF (rising_edge(clock)) THEN
+		ELSIF (falling_edge(clock)) THEN
 			IF (INTR_STATE = "00") THEN
 				IF (INTR = '1') THEN
 					INTA_sig	<= '0';
@@ -337,18 +343,23 @@ BEGIN
 				END IF;
 				Read_ISR_PC	<= '0';
 				
+				
 			ELSIF (INTR_STATE = "01") THEN		
 				INTA_sig	<= '1';
-				INTR_STATE 	:= "10";
-				STATE <= '1';
-								
-			ELSE 
+				HOLD_PC		<= '0';
 				ISRAddr		<= read_data;
 				INTR_STATE 	:= "00";
-				Read_ISR_PC	<= '1';
-				HOLD_PC		<= '0';
-				STATE <= '0';
+				IF IFG(6) = '0' THEN
+					Read_ISR_PC	<= '1';
+					isr_count := 0;
+				ELSIF (isr_count = 0 AND IFG(6) = '1') THEN
+					Read_ISR_PC	<= '1';
+					isr_count := isr_count + 1;
+				END IF;
+				STATE <= '1';
+			--	STATE <= '0';	
 			END IF;
+			
 		
 		END IF;
 	END PROCESS;

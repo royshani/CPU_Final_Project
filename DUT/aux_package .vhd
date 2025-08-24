@@ -253,7 +253,7 @@ END COMPONENT;
 		);
 	END COMPONENT;
 
-COMPONENT Divider is
+COMPONENT Divider IS
      Port (
         FIFOCLK : in STD_LOGIC;          -- FIFO Clock signal
         FIRCLK : in STD_LOGIC;          -- FIR Clock signal
@@ -273,7 +273,7 @@ COMPONENT Divider is
 		FIRCTL   : buffer  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
 		-- Data interface
 		FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
-		FIROUT   : out STD_LOGIC_VECTOR(31 downto 0);   -- FIR output data
+		FIROUT   : buffer STD_LOGIC_VECTOR(31 downto 0);   -- FIR output data
 		FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0); -- added for fir!
 
 		-- Coefficient interface

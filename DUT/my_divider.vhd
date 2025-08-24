@@ -22,7 +22,7 @@ entity Divider is
 
         -- Data interface
         FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
-        FIROUT   : out STD_LOGIC_VECTOR(31 downto 0) := (others => '1');   -- FIR output data
+        FIROUT   : buffer STD_LOGIC_VECTOR(31 downto 0) := (others => '1');   -- FIR output data
 
 
         -- Coefficient interface
@@ -179,7 +179,7 @@ begin
 
                 if (FIRENA = '0') OR (FIRRST = '1') then
                     state_next <= idle; -- Return to idle state when done
-                elsif FIFOEMPTY = '1' then
+                elsif FIFOEMPTY = '1' and firout_ready = '1' then
                     state_next <= idle; -- Continue STATE_FIFOing
                 else
                     state_next <= STATE_FIR; -- Continue STATE_FIRing
@@ -236,7 +236,11 @@ begin
         if FIFORST = '1' then
             fifo_count <= 0;
         elsif rising_edge(FIFOCLK) then
-            fifo_count <= fifo_count_wr - fifo_count_rd;
+            if fifo_count_rd > fifo_count_wr then
+                fifo_count <= fifo_count_wr - (fifo_count_rd) mod (k);
+            else    
+                fifo_count <= fifo_count_wr - fifo_count_rd;
+            end if;
         end if;
         if fifo_count = 0 then
             fifoempty <= '1';
@@ -283,17 +287,22 @@ begin
         elsif rising_edge(FIFOCLK) then
             if FIFOREN = '1' and fifo_count > 0 then
                 x_input       <= fifo_memory(fifo_rd_ptr);
+                --fifo_memory(fifo_rd_ptr) <= (others => '0');
                 fifo_rd_ptr   <= (fifo_rd_ptr + 1) mod k;
-                fifo_count_rd <= fifo_count_rd + 1;
+                fifo_count_rd <= (fifo_count_rd + 1) mod (k+1);
+
                 
             end if;
         end if;
+        --IF fifo_count_rd = fifo_count_wr THEN
+         --   fifo_count_rd <= 0;
+        ---END IF;
     end process;
 
     -----------------------------------------------------------------
     -- 2. FIR filter processing
     -----------------------------------------------------------------
-    process(FIRCLK, FIRRST)
+    process(FIFOCLK, FIRRST)
         variable temp_sum : signed(55 downto 0);
         variable temp_mul : signed(55 downto 0);
     begin
@@ -302,10 +311,11 @@ begin
             y_output <= (others => '0');
             processing_active <= '0';
             firout_ready <= '0';
-        elsif rising_edge(FIRCLK) then
-            if FIRENA = '1'  then
+        elsif rising_edge(FIFOCLK) then
+            if FIFOREN = '1' then
                 -- shift delay line
                 for i in M-1 downto 1 loop
+                    report "inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
                     x_delay(i) <= x_delay(i-1);
                 end loop;
                 x_delay(0) <= x_input;
@@ -321,6 +331,7 @@ begin
                 firout_ready <= '1';
                 processing_active <= '1';
             else
+                report "22222 inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
                 processing_active <= '0';
                 firout_ready <= '0';
             end if;
@@ -333,38 +344,6 @@ begin
     -- Provide data to the MCU on the data bus based on the address and read signals
     DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
     (OTHERS => 'Z'); 
-
-    -- -- FSM State Machine Process
-    -- PROCESS(FIFOCLK, reset)
-    -- BEGIN
-    --     IF reset = '1' THEN
-    --         firctl_state <= IDLE_FIRCTL;
-
-    --         FIRCTL <= (OTHERS => '0');
-    --     ELSIF rising_edge(FIFOCLK) THEN
-    --         firctl_state <= firctl_next_state;
-            
-    --         -- State-specific actions
-    --         CASE firctl_state IS
-    --             WHEN IDLE_FIRCTL => -- update fifo_count process
-    --                 if FIFOWEN = '1' then
-    --                     FIRCTL(5) <= '0';
-    --                 end if;
-                    
-    --             WHEN LOAD_FROM_DATABUS =>
-    --                 -- Load all bits from DataBus
-    --                 FIRCTL(7 downto 4) <= databus_buffer(7 downto 4);
-    --                 FIRCTL(1 downto 0) <= databus_buffer(1 downto 0);
-                    
-    --             WHEN MODIFY_FIRCTL =>
-    --                 -- Modify specific bits based on conditions
-    --                 FIRCTL(2) <= fifoempty;  -- FIFO Full
-    --                 FIRCTL(3) <= fifofull;  -- FIFO Empty
-    --                 -- FIRCTL(5) logic for FIFO write process
-    --                 FIRCTL(5) <= '0';
-    --         END CASE;
-    --     END IF;
-    -- END PROCESS;
 
     process(FIFOCLK, reset,addr,FIRCTLwrite,fifowen,fifo_count)
         begin
@@ -380,42 +359,8 @@ begin
             end if;
         end process;
 
--- -----------------------------------------------------------------------------
--- -- next state logic for firctl fsm
--- ----------------------------------------------------------------------------- 
---     -- Next State Logic
---     PROCESS(firctl_state, Addr, FIRCTLwrite, FIRCTL(5), fifo_count)
---     BEGIN
---         firctl_next_state <= firctl_state;  -- Default: stay in current state
-        
---         CASE firctl_state IS
---             WHEN IDLE_FIRCTL =>
---                 -- Transition to LOAD when write condition is met
---                 IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
---                     databus_buffer <= DataBus(7 DOWNTO 0);
---                     firctl_next_state <= LOAD_FROM_DATABUS;
---                 ELSIF (FIFOWEN = '1' OR (firctl(2) = '0' AND fifo_count = 0) OR (firctl(3) = '0' AND fifo_count = k)) THEN
-
---                     firctl_next_state <= MODIFY_FIRCTL;
---                 END IF;
-                
-                
---             WHEN LOAD_FROM_DATABUS =>
---                 IF (Addr = X"82C" AND FIRCTLwrite = '1') THEN
---                     databus_buffer <= DataBus(7 DOWNTO 0);
---                 else 
---                 firctl_next_state <= IDLE_FIRCTL;
---                 END IF;
-                
---             WHEN MODIFY_FIRCTL =>
---                 -- Return to IDLE after modification
---                 firctl_next_state <= IDLE_FIRCTL;
-                
---         END CASE;
---     END PROCESS;
-
-
     FIROUT <= y_output;
+    
      -----------------------------------------------------------------
     -- Load coefficients
     -----------------------------------------------------------------

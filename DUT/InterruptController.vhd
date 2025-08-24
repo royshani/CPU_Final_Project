@@ -29,17 +29,17 @@ ENTITY INTERRUPT IS
 			CLR_IRQ_OUT	: OUT	STD_LOGIC_VECTOR(6 DOWNTO 0);
 			GIE			: IN	STD_LOGIC;
 			IFG			: buffer STD_LOGIC_VECTOR(6 DOWNTO 0);
-			IntrEn		: buffer STD_LOGIC_VECTOR(6 DOWNTO 0)
+			IntrEn		: buffer STD_LOGIC_VECTOR(6 DOWNTO 0):=(OTHERS => '0')
 		);
 END INTERRUPT;
 ----------------------------------------
 -- Architecture Definition
 ----------------------------------------
 ARCHITECTURE structure OF INTERRUPT IS
-	SIGNAL IRQ	    	: STD_LOGIC_VECTOR(6 DOWNTO 0);
-	SIGNAL CLR_IRQ		: STD_LOGIC_VECTOR(6 DOWNTO 0);
-	SIGNAL TypeReg		: STD_LOGIC_VECTOR(RegSize-1 DOWNTO 0);
-	SIGNAL INTA_Delayed : STD_LOGIC;
+	SIGNAL IRQ	    	: STD_LOGIC_VECTOR(6 DOWNTO 0):=(OTHERS => '0');
+	SIGNAL CLR_IRQ		: STD_LOGIC_VECTOR(6 DOWNTO 0):=(OTHERS => '1');
+	SIGNAL TypeReg		: STD_LOGIC_VECTOR(RegSize-1 DOWNTO 0):=(OTHERS => '0');
+	SIGNAL INTA_Delayed : STD_LOGIC:='0';
 	
 	
 	
@@ -76,8 +76,8 @@ CLR_IRQ(2) <= '0' WHEN (TypeReg = X"10" AND INTA = '1' AND INTA_Delayed = '0') E
 CLR_IRQ(3) <= '0' WHEN (TypeReg = X"14" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
 CLR_IRQ(4) <= '0' WHEN (TypeReg = X"18" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
 CLR_IRQ(5) <= '0' WHEN (TypeReg = X"1C" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
-CLR_IRQ(6) <= '0' WHEN ((TypeReg = X"20" AND INTA = '1' AND INTA_Delayed = '0') OR
- (TypeReg = X"24" AND INTA = '1' AND INTA_Delayed = '0')) ELSE '1'; -- changed to fir x"24" and x"20"
+--CLR_IRQ(6) <= '0' WHEN ((TypeReg = X"20" AND INTA = '1' AND INTA_Delayed = '0') OR
+ --(TypeReg = X"24" AND INTA = '1' AND INTA_Delayed = '0')) ELSE '1'; -- changed to fir x"24" and x"20"
 
 
 -------------------------------------------------------------
@@ -165,7 +165,7 @@ BEGIN
 END PROCESS;
 
 -- Provide data to the MCU on the data bus based on the address and read signals
-DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"842" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0'))  ELSE
+DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"842" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0' and addressbus /= x"82c"))  ELSE
 			"0000000000000000000000000"	& IntrEn 	WHEN (AddressBus = X"840" AND MemReadBus = '1') ELSE
 			"0000000000000000000000000"	& IFG	WHEN (AddressBus = X"841" AND MemReadBus = '1') ELSE
 			(OTHERS => 'Z'); 

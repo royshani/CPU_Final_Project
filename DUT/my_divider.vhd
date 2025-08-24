@@ -145,7 +145,7 @@ begin
 				-- end if;-- NEW: added firout_ready and fifoempty firifg logic, need to check if this is correct
                 if (FIFOWEN='1') then
                     state_next <= STATE_FIFO; -- Move to STATE_FIFO state if FIFO ENABLED is asserted
-                elsif (FIRENA = '1') then
+                elsif (FIFOREN = '1') then
                     state_next <= STATE_FIR; -- Move to STATE_FIR state if FIR ENABLED is asserted
                 else
                     state_next <= idle; -- Stay in idle state if not started
@@ -154,7 +154,7 @@ begin
             when STATE_FIFO =>
                 if FIFORST = '1' or FIFOFULL = '1' then
                     state_next <= idle; -- Return to idle state when done   
-                elsif FIRENA = '1' then
+                elsif FIFOREN = '1' then
                     state_next <= STATE_FIR; -- Move to STATE_FIR state after STATE_FIFOing
                 else
                     state_next <= STATE_FIFO; -- Continue STATE_FIFOing
@@ -164,6 +164,7 @@ begin
 				-- end if;
                 
             when STATE_FIR =>
+
                 if firout_ready = '1' or FIFOEMPTY = '1' then
                     FIRIFG <= '1';
                 end if;
@@ -181,6 +182,8 @@ begin
                     state_next <= idle; -- Return to idle state when done
                 elsif FIFOEMPTY = '1' and firout_ready = '1' then
                     state_next <= idle; -- Continue STATE_FIFOing
+                elsif FIFOWEN = '1' then
+                    state_next <= STATE_FIFO;
                 else
                     state_next <= STATE_FIR; -- Continue STATE_FIRing
                 end if;

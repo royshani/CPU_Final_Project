@@ -73,14 +73,9 @@ add wave -noupdate -group MCU /a_mcu_tb/U_0/CS_SW
 add wave -noupdate -group MCU /a_mcu_tb/U_0/CtrlBusSize
 add wave -noupdate -group MCU /a_mcu_tb/U_0/DataBus
 add wave -noupdate -group MCU /a_mcu_tb/U_0/DataBusSize
-add wave -noupdate -group MCU /a_mcu_tb/U_0/DIVENA
-add wave -noupdate -group MCU /a_mcu_tb/U_0/DIVIDEND
-add wave -noupdate -group MCU /a_mcu_tb/U_0/DIVISOR
 add wave -noupdate -group MCU /a_mcu_tb/U_0/ena
 add wave -noupdate -group MCU /a_mcu_tb/U_0/enaSim
 add wave -noupdate -group MCU /a_mcu_tb/U_0/final_FIROUT
-add wave -noupdate -group MCU /a_mcu_tb/U_0/final_QUOTIENT
-add wave -noupdate -group MCU /a_mcu_tb/U_0/final_RESIDUE
 add wave -noupdate -group MCU /a_mcu_tb/U_0/FIROUT
 add wave -noupdate -group MCU /a_mcu_tb/U_0/GIE
 add wave -noupdate -group MCU /a_mcu_tb/U_0/HEX0
@@ -107,73 +102,71 @@ add wave -noupdate -group MCU /a_mcu_tb/U_0/MemWriteBus
 add wave -noupdate -group MCU /a_mcu_tb/U_0/PC
 add wave -noupdate -group MCU /a_mcu_tb/U_0/pll_out
 add wave -noupdate -group MCU /a_mcu_tb/U_0/pll_out2
-add wave -noupdate -group MCU /a_mcu_tb/U_0/QUOTIENT
 add wave -noupdate -group MCU /a_mcu_tb/U_0/RegSize
 add wave -noupdate -group MCU /a_mcu_tb/U_0/reset
 add wave -noupdate -group MCU /a_mcu_tb/U_0/resetSim
-add wave -noupdate -group MCU /a_mcu_tb/U_0/RESIDUE
 add wave -noupdate -group MCU /a_mcu_tb/U_0/SIM
 add wave -noupdate -group MCU /a_mcu_tb/U_0/Switches
 add wave -noupdate -group MCU /a_mcu_tb/U_0/FIRCTL
 add wave -noupdate -group MCU /a_mcu_tb/U_0/FIRIFG
 add wave -noupdate -group MCU /a_mcu_tb/U_0/FIRIFG_type
 add wave -noupdate -group MCU /a_mcu_tb/U_0/FIRIN
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Add_result
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/AddrBusSize
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/AddressBus
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ALU_result
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ALUop
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ALUSrc
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Branch
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Branch_not_equal
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/clock
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/CLR_IRQ
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ControlBus
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/CtrlBusSize
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/DataBus
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/DataBusSize
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ena
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/EPC
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/firifg
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/GIE
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/HOLD_PC
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/IFG
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Instruction
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTA
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTA_sig
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTR
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTR_Active
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTR_OneCycle
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/INTR_STATE
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/IntrEn
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/IOSize
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/is_ra
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/ISRAddr
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/jump
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/jump_address
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/jump_register
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemAddr
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemRead
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemReadBus
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemtoReg
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemWidth
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemWrite
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/MemWriteBus
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/PC
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/PC_plus_4
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/PC_plus_4_jr_out
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/read_data
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/read_data_1
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/read_data_2
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Read_ISR_PC
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/RegDst
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Regwrite
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/reset
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/SET_ISR_ONCE
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Sign_Extend
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/SIM
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/STATE
-add wave -noupdate -group mips /a_mcu_tb/U_0/CPU/Zero
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Add_result
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/AddrBusSize
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/AddressBus
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ALU_result
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ALUop
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ALUSrc
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Branch
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Branch_not_equal
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/clock
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/CLR_IRQ
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ControlBus
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/CtrlBusSize
+add wave -noupdate -expand -group mips -radix hexadecimal /a_mcu_tb/U_0/CPU/DataBus
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/DataBusSize
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ena
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/EPC
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/firifg
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/GIE
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/HOLD_PC
+add wave -noupdate -expand -group mips -expand /a_mcu_tb/U_0/CPU/IFG
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Instruction
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTA
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTA_sig
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTR
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTR_Active
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTR_OneCycle
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/INTR_STATE
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/IntrEn
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/IOSize
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/is_ra
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/ISRAddr
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/jump
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/jump_address
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/jump_register
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemAddr
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemRead
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemReadBus
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemtoReg
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemWidth
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemWrite
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/MemWriteBus
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/PC
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/PC_plus_4
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/PC_plus_4_jr_out
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/read_data
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/read_data_1
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/read_data_2
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Read_ISR_PC
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/RegDst
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Regwrite
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/reset
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/SET_ISR_ONCE
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Sign_Extend
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/SIM
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/STATE
+add wave -noupdate -expand -group mips /a_mcu_tb/U_0/CPU/Zero
 add wave -noupdate -group optaddrdecoder /a_mcu_tb/U_0/OAD/AddressBus
 add wave -noupdate -group optaddrdecoder /a_mcu_tb/U_0/OAD/CS_HEX0
 add wave -noupdate -group optaddrdecoder /a_mcu_tb/U_0/OAD/CS_HEX1
@@ -212,76 +205,6 @@ add wave -noupdate -group GPIO /a_mcu_tb/U_0/IO_interface/MemReadBus
 add wave -noupdate -group GPIO /a_mcu_tb/U_0/IO_interface/MemWriteBus
 add wave -noupdate -group GPIO /a_mcu_tb/U_0/IO_interface/reset
 add wave -noupdate -group GPIO /a_mcu_tb/U_0/IO_interface/Switches
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/Addr
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/cnt
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF0
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF1
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF2
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF3
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF4
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF5
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF6
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/COEF7
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/coefficients
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/DataBus
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/databus_buffer
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/dividend
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/divisor
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/divisor_next
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/divisor_reg
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/ena
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_count
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_count_rd
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_count_wr
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_memory
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_rd_ptr
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifo_wr_ptr
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIFOCLK
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifoempty
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifofull
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIFOREN
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIFORST
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIFOWEN
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fifowen_internal
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/fir_pulse
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRCLK
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRCTL
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRCTL_internal
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/firctl_next_state
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/firctl_state
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRCTLread
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRCTLwrite
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRENA
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRIFG
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRIFG_type
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRIN
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIROUT
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/firout_ready
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/FIRRST
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/i_next
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/i_reg
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/k
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/M
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/processing_active
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/quotient
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/quotient_OUT
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/remainder
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/remainder_OUT
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/reset
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/state_next
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/state_reg
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/sub
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/sync_ff1
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/sync_ff2
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/sync_ff3
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/sync_ff4
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/W
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/x_delay
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/x_input
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/y_counter
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/y_output
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/z_next
-add wave -noupdate -group FIR /a_mcu_tb/U_0/div_acc/z_reg
 add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/Addr
 add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/BTCCR0
 add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/BTCCR1
@@ -310,16 +233,16 @@ add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/MCLK
 add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/PWM
 add wave -noupdate -group BTIMER /a_mcu_tb/U_0/Basic_Timer/reset
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/AddrBusSize
-add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/AddressBus
+add wave -noupdate -group INTERRUPT -radix hexadecimal /a_mcu_tb/U_0/Intr_Controller/AddressBus
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/ChipSelect
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/clock
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/CLR_IRQ
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/CLR_IRQ_OUT
-add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/DataBus
+add wave -noupdate -group INTERRUPT -radix hexadecimal /a_mcu_tb/U_0/Intr_Controller/DataBus
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/DataBusSize
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/FIRIFG_type
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/GIE
-add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/IFG
+add wave -noupdate -group INTERRUPT -expand /a_mcu_tb/U_0/Intr_Controller/IFG
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/INTA
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/INTA_Delayed
 add wave -noupdate -group INTERRUPT /a_mcu_tb/U_0/Intr_Controller/INTR
@@ -467,11 +390,68 @@ add wave -noupdate -group DMEMORY /a_mcu_tb/U_0/CPU/MEM/SIM
 add wave -noupdate -group DMEMORY /a_mcu_tb/U_0/CPU/MEM/write_clock
 add wave -noupdate -group DMEMORY /a_mcu_tb/U_0/CPU/MEM/write_data
 add wave -noupdate -group DMEMORY /a_mcu_tb/U_0/CPU/MEM/write_enable
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRCLK
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIFOCLK
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/Addr
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/reset
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/ena
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRIFG
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRIFG_type
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/DataBus
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRCTL
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRIN
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIROUT
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF0
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF1
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF2
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF3
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF4
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF5
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF6
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/COEF7
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRCTLread
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRCTLwrite
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/firctl_state
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/firctl_next_state
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/databus_buffer
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIFOREN
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifowen_internal
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRCTL_internal
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/coefficients
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/y_counter
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/firout_ready
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifoempty
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifofull
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/x_input
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/y_output
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/processing_active
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/x_delay
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_memory
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_wr_ptr
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_rd_ptr
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_count_wr
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_count_rd
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fifo_count
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/fir_pulse
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/sync_ff1
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/sync_ff2
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/sync_ff3
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/sync_ff4
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/state_reg
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/state_next
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/cnt
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIFOWEN
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIFORST
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRRST
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/FIRENA
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/M
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/W
+add wave -noupdate -group FIR /a_mcu_tb/U_0/fir_op/k
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {4001750000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {922417161 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 292
-configure wave -valuecolwidth 100
+configure wave -valuecolwidth 190
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
 configure wave -snapdistance 10
@@ -484,4 +464,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {60178773 ps}
+WaveRestoreZoom {920070905 ps} {923429096 ps}

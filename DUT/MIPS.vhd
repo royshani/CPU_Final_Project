@@ -183,6 +183,7 @@ END COMPONENT;
 	SIGNAL HOLD_PC												: STD_LOGIC;
 	SIGNAL STATE 												: STD_LOGIC;
 	SIGNAL SET_ISR_ONCE											: STD_LOGIC:='0';
+
 	
 BEGIN
 	
@@ -303,7 +304,7 @@ BEGIN
 	AddressBus		<= X"00000" & ALU_result(11 DOWNTO 0) WHEN (MemRead = '1' OR MemWrite = '1')
 						ELSE (OTHERS => '0');
 						
-	DataBus			<= read_data_2 	WHEN (ALU_result(11) = '1' AND MemWrite = '1') ELSE 
+	DataBus			<= read_data_2 	WHEN (ALU_result(11) = '1' AND MemWrite = '1' and IFG(6) = '0') ELSE 
 					   (OTHERS => 'Z');	-- GPIO OUTPUT
 
 	MemAddr 		<= DataBus 	WHEN (INTA_sig = '0') ELSE 
@@ -317,11 +318,11 @@ BEGIN
 	------ INTA and ISR Addr ------
 	INTA	<= INTA_sig;
 	PROCESS (clock, INTR, reset)
-	VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
+
 
 BEGIN
 	IF reset = '1' THEN
-		INTR_STATE 	:= "00";
+		INTR_STATE 	<= "00";
 		INTA_sig 	<= '1';
 		Read_ISR_PC	<= '0';
 		HOLD_PC		<= '0';
@@ -331,20 +332,21 @@ BEGIN
 		IF (INTR_STATE = "00") THEN
 			IF (INTR = '1') THEN
 				INTA_sig	<= '0';
-				INTR_STATE	:= "01";
+				INTR_STATE	<= "01";
 				HOLD_PC		<= '1';
 				STATE <= '0';
+				
 			END IF;
 			Read_ISR_PC	<= '0';
 			
 		ELSIF (INTR_STATE = "01") THEN		
 			INTA_sig	<= '1';
-			INTR_STATE 	:= "10";
+			INTR_STATE 	<= "10";
 			STATE <= '1';
 							
 		ELSE 
 			ISRAddr		<= read_data;
-			INTR_STATE 	:= "00";
+			INTR_STATE 	<= "00";
 			Read_ISR_PC	<= '1';
 			HOLD_PC		<= '0';
 			STATE <= '0';

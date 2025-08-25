@@ -165,7 +165,7 @@ BEGIN
 END PROCESS;
 
 -- Provide data to the MCU on the data bus based on the address and read signals
-DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"842" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0' and addressbus /= x"82c" and addressbus /= x"830"))  ELSE
+DataBus <=	X"000000" 		& TypeReg 	WHEN ((AddressBus = X"842" AND MemReadBus = '1') OR (INTA = '0' AND MemReadBus = '0')) or IFG(6) = '1' ELSE
 			"0000000000000000000000000"	& IntrEn 	WHEN (AddressBus = X"840" AND MemReadBus = '1') ELSE
 			"0000000000000000000000000"	& IFG	WHEN (AddressBus = X"841" AND MemReadBus = '1') ELSE
 			(OTHERS => 'Z'); 

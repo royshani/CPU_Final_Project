@@ -59,7 +59,8 @@ inst_memory: altsyncram
 
 		lpm_type => "altsyncram",
 		outdata_reg_a => "UNREGISTERED",
-		init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\ITCM.hex",
+		--init_file => "C:\Users\yanai\Local\Documents\Yanai\University\LABS\CPU Architercture\Final_Project\code\ITCM.hex",
+		init_file => "C:\intelFPGA\Final_Project\CODE\ITCM.hex",
 		intended_device_family => "Cyclone"
 	)
 	PORT MAP (

@@ -19,7 +19,8 @@ entity FIR is
         DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         -- FIR control register is now inout
         FIRCTL     : buffer STD_LOGIC_VECTOR(7 downto 0):= (others => '0');
-
+        INTR       : in STD_LOGIC;
+        INTR_Active : in STD_LOGIC;
         -- Data interface
         FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
         FIROUT   : buffer STD_LOGIC_VECTOR(31 downto 0) := (others => '1');   -- FIR output data
@@ -352,7 +353,7 @@ begin
 -- firctl fsm control process
 ----------------------------------------------------------------------------- 
     -- Provide data to the MCU on the data bus based on the address and read signals
-    DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1') ELSE
+    DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1' and INTR = '0' and INTR_Active = '0') ELSE
     (OTHERS => 'Z'); 
 
     process(FIFOCLK, reset,addr,FIRCTLwrite,fifowen,fifo_count)

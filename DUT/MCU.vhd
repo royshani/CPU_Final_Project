@@ -234,7 +234,8 @@ BEGIN
 			reset => resetSim,       -- Asynchronous reset signal
 			ena  => ena,        
 			FIRIFG => FIRIFG,      
-
+			INTR => INTR,
+			INTR_Active => INTR_Active,
 			FIRCTL => FIRCTL,
 			FIRIN => FIRIN,
 			FIROUT => FIROUT,

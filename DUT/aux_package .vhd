@@ -265,7 +265,8 @@ COMPONENT FIR IS
         reset : in STD_LOGIC;        -- Asynchronous reset signal
         ena : in STD_LOGIC;        -- Start signal to begin the division
 		FIRIFG : buffer STD_LOGIC;         
-
+		INTR : in STD_LOGIC;
+		INTR_Active : in STD_LOGIC;
 		FIRCTL   : buffer  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
 		-- Data interface
 		FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data

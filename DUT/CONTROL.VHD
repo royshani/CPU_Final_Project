@@ -55,7 +55,7 @@ BEGIN
 	MemtoReg(1) 	<=  jal;
 	MemtoReg(0) 	<=  Lw;
   	RegWrite 	<=  (R_format OR Lw OR Addi or Andi or ori or xori or slti or lui or jal or mul) and (not jr);
-  	MemRead 	<=  Lw;
+  	MemRead 	<=  lw;
    	MemWrite 	<=  '1' WHEN (Sw = '1' OR STATE = '1') ELSE '0'; 
  	Branch      <=  Beq;
 	Branch_not_equal <= bne;

@@ -76,8 +76,8 @@ CLR_IRQ(2) <= '0' WHEN (TypeReg = X"10" AND INTA = '1' AND INTA_Delayed = '0') E
 CLR_IRQ(3) <= '0' WHEN (TypeReg = X"14" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
 CLR_IRQ(4) <= '0' WHEN (TypeReg = X"18" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
 CLR_IRQ(5) <= '0' WHEN (TypeReg = X"1C" AND INTA = '1' AND INTA_Delayed = '0') ELSE '1';
---CLR_IRQ(6) <= '0' WHEN ((TypeReg = X"20" AND INTA = '1' AND INTA_Delayed = '0') OR
- --(TypeReg = X"24" AND INTA = '1' AND INTA_Delayed = '0')) ELSE '1'; -- changed to fir x"24" and x"20"
+CLR_IRQ(6) <= '0' WHEN ((FIRIFG_type = "01" AND INTA = '1' AND INTA_Delayed = '0') OR
+ (FIRIFG_type = "10" AND INTA = '1' AND INTA_Delayed = '0')) ELSE '1'; -- changed to fir x"24" and x"20"
 
 
 -------------------------------------------------------------

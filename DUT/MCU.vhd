@@ -57,14 +57,7 @@ ARCHITECTURE structure OF MCU IS
 	SIGNAL BTIFG        : STD_LOGIC;
 
 	-- BASIC TIMER --
-	SIGNAL DIVIDEND		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL DIVISOR		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL final_QUOTIENT		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
-	SIGNAL final_RESIDUE		:	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL FIRIFG		:	STD_LOGIC := '0';
-	SIGNAL DIVENA		:	STD_LOGIC  := '0';
 	
 
 	-- FIR --
@@ -121,8 +114,13 @@ BEGIN
 					CLR_IRQ		=> CLR_IRQ,
 					DataBus		=> DataBus,
 					IFG			=> IFG,
+<<<<<<< HEAD
+					firifg		=> FIRIFG,
+					IntrEn      => IntrEn
+=======
 					IntrEn      => IntrEn,
 					FIRIFG => FIRIFG
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830
 		);
 		
 	
@@ -190,7 +188,6 @@ BEGIN
 			
 			if(AddressBus(11 DOWNTO 0) = X"830" AND MemWriteBus = '1') then
 				FIRIN <= DataBus; -- FIRIN is the input data for the FIR
-				-- DIVENA <= '1'; --IN FIR THIS IS PERFORMED IN FIRCTL
 			END IF;
 
 			IF(AddressBus(11 DOWNTO 0) = X"838" AND MemWriteBus = '1') then
@@ -208,9 +205,8 @@ BEGIN
 			END IF;
 
 			if(FIRIFG = '1') AND FIRIFG_type = "10" then
-				-- DIVENA <= '0'; --IN FIR THIS IS PERFORMED IN FIRCTL
 				final_FIROUT <= FIROUT;	-- FINAL OUTPUT OF FIR
-				-- final_RESIDUE <= RESIDUE; -- IN FIR THIS IS UNUSED
+
 			END IF;
 		END IF;
 	END PROCESS;
@@ -232,7 +228,7 @@ BEGIN
 
 
 	
-	div_acc: Divider
+	fir_op: FIR
 		Port MAP(
 			FIFOCLK => pll_out,          -- FIFO Clock signal
 			FIRCLK => pll_out2,          -- FIR Clock signal
@@ -241,12 +237,8 @@ BEGIN
 			FIRCTLwrite	=> MemWriteBus,
 			DataBus		=> DataBus,
 			reset => resetSim,       -- Asynchronous reset signal
-			ena  => DIVENA,        -- Start signal to begin the division
-			dividend => DIVIDEND, -- Input for dividend (32-bit)
-			divisor => DIVISOR, -- Input for divisor (32-bit)
-			quotient_OUT => QUOTIENT, -- Output for quotient (32-bit)
-			remainder_OUT => RESIDUE, -- Output for remainder (32-bit)
-			FIRIFG => FIRIFG,         -- Indicates an overflow condition
+			ena  => ena,        
+			FIRIFG => FIRIFG,      
 
 			FIRCTL => FIRCTL,
 			FIRIN => FIRIN,

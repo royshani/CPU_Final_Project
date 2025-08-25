@@ -32,7 +32,11 @@ ENTITY MIPS IS
 		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+<<<<<<< HEAD
+		firifg				: IN STD_LOGIC;
+=======
 		FIRIFG				: IN STD_LOGIC;
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830
 		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
 		
 END 	MIPS;
@@ -160,7 +164,7 @@ END COMPONENT;
 	SIGNAL Branch 			: STD_LOGIC;
 	SIGNAL Branch_not_equal : STD_LOGIC;
 	SIGNAL is_ra 			: STD_LOGIC := '0';  -- Initialized to '0'
-
+	SIGNAL INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
 	SIGNAL jump 			: STD_LOGIC;
 	signal jump_register	: STD_LOGIC;
 	SIGNAL RegDst 			: STD_LOGIC_VECTOR( 1 DOWNTO 0 );
@@ -315,19 +319,41 @@ BEGIN
 				
 	---------- INTERRUPT ----------
 	------ INTA and ISR Addr ------
-	INTA	 <= INTA_sig;
-	
+	INTA	<= INTA_sig;
+	PROCESS (clock, INTR, reset)
+	VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
 
-	PROCESS (clock, INTR, reset, INTR_Active)
-		VARIABLE INTR_STATE 	: STD_LOGIC_VECTOR(1 DOWNTO 0);
-		VARIABLE isr_count 	: INTEGER := 0;
-	BEGIN
-		IF reset = '1' THEN
-			INTR_STATE 	:= "00";
-			INTA_sig 	<= '1';
+BEGIN
+	IF reset = '1' THEN
+		INTR_STATE 	:= "00";
+		INTA_sig 	<= '1';
+		Read_ISR_PC	<= '0';
+		HOLD_PC		<= '0';
+		STATE <= '0';
+	
+	ELSIF (rising_edge(clock)) THEN
+		IF (INTR_STATE = "00") THEN
+			IF (INTR = '1') THEN
+				INTA_sig	<= '0';
+				INTR_STATE	:= "01";
+				HOLD_PC		<= '1';
+				STATE <= '0';
+			END IF;
 			Read_ISR_PC	<= '0';
+			
+		ELSIF (INTR_STATE = "01") THEN		
+			INTA_sig	<= '1';
+			INTR_STATE 	:= "10";
+			STATE <= '1';
+							
+		ELSE 
+			ISRAddr		<= read_data;
+			INTR_STATE 	:= "00";
+			Read_ISR_PC	<= '1';
 			HOLD_PC		<= '0';
 			STATE <= '0';
+<<<<<<< HEAD
+=======
 			isr_count := 0;
 
 		ELSIF INTR_Active = '0' THEN
@@ -362,8 +388,70 @@ BEGIN
 			END IF;
 			
 		
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830
 		END IF;
-	END PROCESS;
+	
+	END IF;
+END PROCESS;
+-- 	ISRAddr		<= read_data;
+-- 	PROCESS (clock, INTR, reset)
+
+
+-- 	BEGIN
+		
+-- 		IF reset = '1' THEN
+-- 			INTR_STATE 	<= "00";
+-- 			INTA_sig 	<= '1';
+-- 			Read_ISR_PC	<= '0';
+-- 			HOLD_PC		<= '0';
+-- 			STATE <= '0';
+		
+-- 		ELSIF (rising_edge(clock)) THEN
+-- 			IF (INTR_STATE = "00") THEN
+-- 				IF (INTR = '1') THEN
+-- 					INTA_sig	<= '0';
+-- 					INTR_STATE	<= "01";
+-- 					HOLD_PC		<= '1';
+-- 					STATE <= '0';
+-- 				END IF;
+-- 				Read_ISR_PC	<= '0';
+				
+-- 			ELSIF (INTR_STATE = "01") THEN		
+-- 				INTA_sig	<= '1';
+-- 				if IFG(6) = '0' then
+-- 					INTR_STATE 	<= "10";
+-- 					--Read_ISR_PC	<= '1';
+-- 					STATE <= '1';
+-- 				else
+-- 					INTR_STATE 	<= "11";
+-- 					HOLD_PC		<= '0';
+-- 					STATE <= '0';
+-- 				end if;
+-- 				Read_ISR_PC	<= '1';
+
+-- 			elsif (INTR_STATE = "11") then
+-- 				Read_ISR_PC	<= '0';
+-- 				HOLD_PC		<= '0';
+-- 				INTA_sig	<= '0';
+-- 				STATE <= '0';
+-- 				if firifg = '1' then
+-- 					INTA_sig	<= '1';
+-- 					HOLD_PC		<= '1';
+-- 					INTR_STATE 	<= "11";
+-- --					Read_ISR_PC	<= '1';
+-- 					STATE <= '0';
+-- 				end if;
+					
+-- 			ELSE 
+				
+-- 				INTR_STATE 	<= "00";
+
+-- 				HOLD_PC		<= '0';
+-- 				STATE <= '0';
+-- 			END IF;
+		
+-- 		END IF;
+-- 	END PROCESS;
 	
 	------ EPC (Exception Program Counter) PROCESS ------
 	PROCESS (clock, INTR, reset) BEGIN	

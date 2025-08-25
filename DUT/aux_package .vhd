@@ -32,9 +32,14 @@ package aux_package is
 		CLR_IRQ				: IN	STD_LOGIC_VECTOR(6 DOWNTO 0);
 		DataBus				: INOUT	STD_LOGIC_VECTOR(DataBusSize-1 DOWNTO 0);
 		IFG				    : IN STD_LOGIC_VECTOR(6 DOWNTO 0);
+<<<<<<< HEAD
+		firifg				: IN STD_LOGIC;
+		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0)		);
+=======
 		IntrEn		     	: IN STD_LOGIC_VECTOR(6 DOWNTO 0);
 		FIRIFG				: IN STD_LOGIC
 		);
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830
 		end COMPONENT;
 
 	COMPONENT Ifetch IS
@@ -255,7 +260,7 @@ END COMPONENT;
 		);
 	END COMPONENT;
 
-COMPONENT Divider IS
+COMPONENT FIR IS
      Port (
         FIFOCLK : in STD_LOGIC;          -- FIFO Clock signal
         FIRCLK : in STD_LOGIC;          -- FIR Clock signal
@@ -265,13 +270,8 @@ COMPONENT Divider IS
 		DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         reset : in STD_LOGIC;        -- Asynchronous reset signal
         ena : in STD_LOGIC;        -- Start signal to begin the division
-        dividend : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for dividend (32-bit)
-        divisor : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for divisor (32-bit)
-        quotient_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for quotient (32-bit)
-        remainder_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for remainder (32-bit)
-		FIRIFG : buffer STD_LOGIC;         -- Indicates an overflow condition
+		FIRIFG : buffer STD_LOGIC;         
 
-		-- ADDED FOR FIR!
 		FIRCTL   : buffer  STD_LOGIC_VECTOR(7 downto 0); -- FIR control register
 		-- Data interface
 		FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data

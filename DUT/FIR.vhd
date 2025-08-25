@@ -3,9 +3,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 USE work.aux_package.ALL;
 -----------------------------------------
--- Entity Declaration for Divider
+-- Entity Declaration for FIR
 -----------------------------------------
-entity Divider is
+entity FIR is
     Port (
 --------------------------------------------------
     -- fir interface ALREADY USED
@@ -13,9 +13,9 @@ entity Divider is
         FIFOCLK     : in STD_LOGIC;          -- Clock signal
 		Addr	: IN	STD_LOGIC_VECTOR(11 DOWNTO 0);
         reset   : in STD_LOGIC;        -- Asynchronous reset signal
-        ena     : in STD_LOGIC;        -- Start signal to begin the division
-        FIRIFG  : buffer STD_LOGIC := '0';         -- Indicates an overflow condition (changed from divifg)
-        FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0) := "00"; -- added for fir!
+        ena     : in STD_LOGIC;        -- Start signal to begin the fir
+        FIRIFG  : buffer STD_LOGIC := '0';       
+        FIRIFG_type : out STD_LOGIC_VECTOR(1 DOWNTO 0) := "00"; 
         DataBus		: INOUT	STD_LOGIC_VECTOR(31 DOWNTO 0);
         -- FIR control register is now inout
         FIRCTL     : buffer STD_LOGIC_VECTOR(7 downto 0):= (others => '0');
@@ -31,20 +31,15 @@ entity Divider is
 --------------------------------------------------
 
 --------------------------------------------------
-    -- Divider interface NEED TO CHANGE FOR FIR!
-        dividend : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for dividend (32-bit)
-        divisor : in  STD_LOGIC_VECTOR (31 downto 0); -- Input for divisor (32-bit)
-        quotient_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for quotient (32-bit)
-        remainder_OUT : out  STD_LOGIC_VECTOR (31 downto 0); -- Output for remainder (32-bit)
         FIRCTLread	: IN	STD_LOGIC;
         FIRCTLwrite	: IN	STD_LOGIC
 --------------------------------------------------
     );
-end Divider;
+end FIR;
 ----------------------------------------
 -- Architecture Definition
 ----------------------------------------
-architecture Behavioral of Divider is
+architecture Behavioral of FIR is
 
     -- Define the states for the Finite State Machine (FSM)
     type state_type is (idle, STATE_FIFO, STATE_FIR);
@@ -104,22 +99,12 @@ architecture Behavioral of Divider is
     
     -- Signals for FSM state registers and next state values
     signal state_reg, state_next : state_type;   
-    -- Registers for intermediate values during the division
-    signal z_reg, z_next : unsigned(64 downto 0);  -- z_reg needs to store 64 bits: 32 for remainder + 32 for quotient
-    signal divisor_reg, divisor_next : unsigned(31 downto 0);  -- divisor_reg is 32 bits for the divisor
-    signal i_reg, i_next : unsigned(5 downto 0);   -- Counter to count 32 iterations
-	signal quotient : STD_LOGIC_VECTOR (31 downto 0) := (others => '0'); -- Output for quotient (32-bit)
-    signal remainder:  STD_LOGIC_VECTOR (31 downto 0) := (others => '0'); -- Output for remainder (32-bit)
     signal cnt: unsigned(5 downto 0) := (others => '0');
-    -- Signal for the result of subtraction
-    signal sub : unsigned(32 downto 0);
+
               
 begin
 
-    
-	quotient_OUT <= quotient;
-	
-	remainder_OUT <= remainder;
+
 -----------------------------------------------------------------------------
 -- FSM process new
 -----------------------------------------------------------------------------	
@@ -135,7 +120,11 @@ begin
     end process;
 
 
+<<<<<<< HEAD:DUT/FIR.vhd
+    -- -- Control path: Logic to determine the next state of the FSM
+=======
     -- Control path: Logic to determine the next state of the FSM
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
     -- process(state_reg, ena, FIFOWEN, FIRENA, FIFORST, FIFOFULL, FIFOEMPTY, FIRRST)
     -- begin
     --     case state_reg is 
@@ -154,11 +143,21 @@ begin
     --         when STATE_FIFO =>
     --             if FIFORST = '1' or FIFOFULL = '1' then
     --                 state_next <= idle; -- Return to idle state when done   
+<<<<<<< HEAD:DUT/FIR.vhd
+    --             elsif FIRENA = '1' then
+=======
     --             elsif FIFOREN = '1' then
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
     --                 state_next <= STATE_FIR; -- Move to STATE_FIR state after STATE_FIFOing
     --             else
     --                 state_next <= STATE_FIFO; -- Continue STATE_FIFOing
     --             end if;
+<<<<<<< HEAD:DUT/FIR.vhd
+	-- 			-- if(i_reg = i_next) then --  HANAN turns of firifg in itcm line FIR_STP section
+	-- 			-- 	FIRIFG <= '0';
+	-- 			-- end if;
+=======
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
                 
     --         when STATE_FIR =>
 
@@ -167,17 +166,58 @@ begin
     --             end if;
                 
     --             -- need to verify logic for firifg_type
+<<<<<<< HEAD:DUT/FIR.vhd
+    --             if fifoempty = '1' then
+    --                 FIRIFG_type <= "01";
+    --             elsif firout_ready = '1' then
+    --                 FIRIFG_type <= "10";
+    --             else
+    --                 FIRIFG_type <= "00";
+    --             end if;
+
+    --             if (FIRENA = '0') OR (FIRRST = '1') then
+    --                 state_next <= idle; -- Return to idle state when done
+    --             elsif FIFOEMPTY = '1' and firout_ready = '1' then
+    --                 state_next <= idle; -- Continue STATE_FIFOing
+    --             elsif FIFOWEN = '1' then
+    --                 state_next <= STATE_FIFO;
+    --             else
+    --                 state_next <= STATE_FIR; -- Continue STATE_FIRing
+    --             end if;
+                
+    --     end case;
+    -- end process;
+
+    process(FIFOCLK, reset)
+    begin
+        if reset = '1' then
+            firifg <= '0';
+            FIRIFG_type <= "00";
+        elsif rising_edge(FIFOCLK) then
+            if FIFOEMPTY = '1' or firout_ready = '1' then
+                firifg <= '1';
+            else
+                firifg <= '0';
+            end if;
+            -- need to verify logic for firifg_type
+=======
     process(FIFOCLK, reset)
     begin
         if reset = '1' then
             FIRIFG_type <= "00";
         elsif rising_edge(FIFOCLK) then
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
             if fifoempty = '1' then
                 FIRIFG_type <= "01";
             elsif firout_ready = '1' then
                 FIRIFG_type <= "10";
+<<<<<<< HEAD:DUT/FIR.vhd
+  --          else
+    --            FIRIFG_type <= "00";
+=======
             else
                 FIRIFG_type <= "00";
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
             end if;
         end if;
     end process;
@@ -324,7 +364,11 @@ begin
             if FIFOREN = '1' then
                 -- shift delay line
                 for i in M-1 downto 1 loop
+<<<<<<< HEAD:DUT/FIR.vhd
+                    
+=======
                     --report "inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+>>>>>>> 818fb9a182e484e0e3b60d66e0c03861e4f29830:DUT/my_divider.vhd
                     x_delay(i) <= x_delay(i-1);
                 end loop;
                 x_delay(0) <= x_input;
@@ -341,7 +385,7 @@ begin
                 firout_ready <= '1';
                 processing_active <= '1';
             else
-                report "22222 inside FIR loop!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+                
                 processing_active <= '0';
                 firout_ready <= '0';
             end if;

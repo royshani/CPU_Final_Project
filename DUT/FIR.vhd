@@ -299,10 +299,13 @@ begin
             if FIFOREN = '1' and fifo_count > 0 then
                 x_input       <= fifo_memory(fifo_rd_ptr);
                 --fifo_memory(fifo_rd_ptr) <= (others => '0');
-                fifo_rd_ptr   <= (fifo_rd_ptr + 1) mod k;
+                -- Read only up to index 7, don't read index 8
+                if fifo_rd_ptr = 7 then
+                    fifo_rd_ptr <= 0;  -- Reset to beginning
+                else
+                    fifo_rd_ptr <= fifo_rd_ptr + 1;  -- Increment normally
+                end if;
                 fifo_count_rd <= (fifo_count_rd + 1) mod (k+1);
-
-                
             end if;
         end if;
         --IF fifo_count_rd = fifo_count_wr THEN
@@ -338,7 +341,8 @@ begin
                     temp_sum := temp_sum + temp_mul;
                 end loop;
                 -- take upper 32 bits
-                y_output <= std_logic_vector(temp_sum(55 downto 24));
+                y_output <= (7 downto 0 => '0') & std_logic_vector(temp_sum(55 downto 32));
+
                 firout_ready <= '1';
                 processing_active <= '1';
             else
@@ -370,7 +374,7 @@ begin
             end if;
         end process;
 
-    FIROUT <= y_output;
+    FIROUT <= "00000000" & y_output(23 downto 0);
     
      -----------------------------------------------------------------
     -- Load coefficients
@@ -383,5 +387,6 @@ begin
     coefficients(5) <= (23 downto 0 => '0') & COEF5;
     coefficients(6) <= (23 downto 0 => '0') & COEF6;
     coefficients(7) <= (23 downto 0 => '0') & COEF7;
+
        
 end Behavioral;

@@ -23,7 +23,7 @@ entity FIR is
         INTR_Active : in STD_LOGIC;
         -- Data interface
         FIRIN    : in  STD_LOGIC_VECTOR(31 downto 0);   -- FIR input data
-        FIROUT   : buffer STD_LOGIC_VECTOR(31 downto 0) := (others => '1');   -- FIR output data
+        FIROUT   : buffer STD_LOGIC_VECTOR(31 downto 0) := (others => '0');   -- FIR output data
 
 
         -- Coefficient interface
@@ -80,7 +80,7 @@ architecture Behavioral of FIR is
     signal fifo_rd_ptr    : integer range 0 to k := 0;
     signal fifo_count_wr  : integer range 0 to k := 0;
     signal fifo_count_rd  : integer range 0 to k := 0;
-    signal fifo_count     : integer range 0 to k := 0;
+    signal fifo_count     : integer range 0 to k;
 --------------------------------------------------
     -- Synchronizer signals for FIR -> FIFO pulse
     signal fir_pulse   : std_logic := '0';
@@ -249,13 +249,15 @@ begin
         if FIFORST = '1' then
             fifo_count <= 0;
         elsif rising_edge(FIFOCLK) then
-            if fifo_count_rd > fifo_count_wr then
-                fifo_count <= fifo_count_wr - (fifo_count_rd) mod (k);
-            else    
+            -- Proper FIFO count calculation using modulo arithmetic
+            if fifo_count_wr >= fifo_count_rd then
                 fifo_count <= fifo_count_wr - fifo_count_rd;
+            else
+                -- Handle wrap-around case: (k+1) - (fifo_count_rd - fifo_count_wr)
+                fifo_count <= (k+1) - (fifo_count_rd - fifo_count_wr);
             end if;
         end if;
-        if fifo_count = 0 then
+        if fifo_count = 0 and FIRCTL(0) = '1' then
             fifoempty <= '1';
         else
             fifoempty <= '0';
@@ -273,8 +275,8 @@ begin
     process(FIFOCLK, FIFORST)
     begin
         if FIFORST = '1' then
-            fifo_wr_ptr   <= 0;
-            fifo_count_wr <= 0;
+            fifo_wr_ptr   <= -1;
+            fifo_count_wr <= -1;
 
         elsif rising_edge(FIFOCLK) then
             if FIFOWEN = '1' and fifo_count < k then
@@ -291,73 +293,113 @@ begin
     -----------------------------------------------------------------
     -- 1. fir read from FIFO process
     -----------------------------------------------------------------
-    process(FIFOCLK, FIRRST)
-    begin
-        if FIRRST = '1' then
-            fifo_rd_ptr   <= 0;
-            x_input       <= (others => '0');
-            fifo_count_rd <= 0;
-        elsif rising_edge(FIFOCLK) then
-            if FIFOREN = '1' and fifo_count > 0 then
-                x_input       <= fifo_memory(fifo_rd_ptr);
-                --fifo_memory(fifo_rd_ptr) <= (others => '0');
-                fifo_rd_ptr   <= (fifo_rd_ptr + 1) mod k;
-                fifo_count_rd <= (fifo_count_rd + 1) mod (k+1);
+    -- process(FIFOCLK, FIRRST)
+    -- begin
+    --     if FIRRST = '1' then
+
 
                 
-            end if;
-        end if;
-        --IF fifo_count_rd = fifo_count_wr THEN
-         --   fifo_count_rd <= 0;
-        ---END IF;
-    end process;
+    --         end if;
+    --     end if;
+    --     --IF fifo_count_rd = fifo_count_wr THEN
+    --      --   fifo_count_rd <= 0;
+    --     ---END IF;
+    -- end process;
 
     -----------------------------------------------------------------
     -- 2. FIR filter processing
     -----------------------------------------------------------------
-    process(FIFOCLK, FIRRST)
-    begin
-        if FIRRST = '1' then
-            x_delay <= (others => (others => '0'));
-            y_output <= (others => '0');
-            processing_active <= '0';
-            firout_ready <= '0';
-            temp_sum <= (others => '0');
-            temp_mul <= (others => '0');
-        elsif rising_edge(FIFOCLK) then
-            if FIFOREN = '1' and fifo_count > 0 and (fifoempty = '0') then
-                -- shift delay line
-                for i in M-1 downto 1 loop
-                    x_delay(i) <= x_delay(i-1);
-                end loop;
-                x_delay(0) <= x_input;
-                
-                -- FIR computation using signals
-                temp_sum <= (signed(x_delay(0)) * signed(coefficients(0))) +
-                           (signed(x_delay(1)) * signed(coefficients(1))) +
-                           (signed(x_delay(2)) * signed(coefficients(2))) +
-                           (signed(x_delay(3)) * signed(coefficients(3))) +
-                           (signed(x_delay(4)) * signed(coefficients(4))) +
-                           (signed(x_delay(5)) * signed(coefficients(5))) +
-                           (signed(x_delay(6)) * signed(coefficients(6))) +
-                           (signed(x_delay(7)) * signed(coefficients(7)));
-                
-                -- take upper 32 bits
-                y_output <= "00000000" & std_logic_vector(temp_sum(23 downto 0));
-                firout_ready <= '1';
-                processing_active <= '1';
-            else
-                processing_active <= '0';
-                firout_ready <= '0';
+-----------------------------------------------------------------------------
+-- FIR filter processing
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-- FIR filter processing
+-----------------------------------------------------------------------------
+process(FIFOCLK, FIRRST)
+    variable delay_var : delay_line;               -- local variable for delay line
+    variable sum_var   : signed(55 downto 0);      -- local accumulator
+    variable new_sample : STD_LOGIC_VECTOR(W-1 downto 0);
+    variable first_sample_loaded : STD_LOGIC := '0';
+    
+begin
+    if FIRRST = '1' then
+        -- Reset all states
+        x_delay           <= (others => (others => '0'));
+        y_output          <= (others => '0');
+        processing_active <= '0';
+        firout_ready      <= '0';
+        fifo_rd_ptr       <= -1;
+        x_input           <= (others => '0');
+        fifo_count_rd     <= -1;
+        temp_sum          <= (others => '0');
+        temp_mul          <= (others => '0');
+
+    elsif rising_edge(FIFOCLK) then
+        if FIFOREN = '1' and fifo_count > 0 and fifoempty = '0' then
+            -- Copy signals into local variable for immediate update
+            delay_var := x_delay;
+            fifo_rd_ptr   <= (fifo_rd_ptr + 1) mod k;
+            fifo_count_rd <= (fifo_count_rd + 1) mod (k+1);
+            -- Capture new sample from FIFO into a variable
+            new_sample := fifo_memory(fifo_rd_ptr);
+
+            -- Update FIFO pointers
+
+
+            -- Shift delay line (older samples move right)
+            for i in M-1 downto 1 loop
+                delay_var(i) := delay_var(i-1);
+            end loop;
+            delay_var(0) := new_sample;
+
+            -- FIR computation using the updated delay line
+            sum_var := (signed(delay_var(0)) * signed(coefficients(0))) +
+                       (signed(delay_var(1)) * signed(coefficients(1))) +
+                       (signed(delay_var(2)) * signed(coefficients(2))) +
+                       (signed(delay_var(3)) * signed(coefficients(3))) +
+                       (signed(delay_var(4)) * signed(coefficients(4))) +
+                       (signed(delay_var(5)) * signed(coefficients(5))) +
+                       (signed(delay_var(6)) * signed(coefficients(6))) +
+                       (signed(delay_var(7)) * signed(coefficients(7)));
+
+            -- Commit updated delay line and sample to signals
+            x_delay <= delay_var;
+            x_input <= new_sample;
+
+            -- Save sum into signal for waveform visibility
+            temp_sum <= sum_var;
+
+            -- Output result immediately (zero-extended to 32 bits)
+            y_output <= "00000000" & std_logic_vector(sum_var(23 downto 0));
+            FIROUT   <= "00000000" & std_logic_vector(sum_var(23 downto 0));
+
+
+            -- Flags
+            if FIROUT /= "000000000000000000000000" then
+                -- if first_sample_loaded = '0' then
+                --     first_sample_loaded := '1';
+                -- else
+                    firout_ready      <= '1';
+                    processing_active <= '1';
+                -- end if;
             end if;
+
+        else
+            -- Pause FIR when FIFO is empty
+            processing_active <= '0';
+            firout_ready      <= '0';
         end if;
-    end process;
+    end if;
+end process;
+
+
 
 -----------------------------------------------------------------------------
 -- firctl fsm control process
 ----------------------------------------------------------------------------- 
     -- Provide data to the MCU on the data bus based on the address and read signals
     DataBus <= "000000000000000000000000"	& FIRCTL	WHEN (Addr = X"82C" AND FIRCTLread = '1' and INTR = '0' and INTR_Active = '0') ELSE
+    FIROUT	WHEN (Addr = X"834" AND firctlread = '1') ELSE
     (OTHERS => 'Z'); 
 
     process(FIFOCLK, reset,addr,FIRCTLwrite,fifowen,fifo_count)
@@ -374,7 +416,7 @@ begin
             end if;
         end process;
 
-    FIROUT <= y_output;
+    -- FIROUT is now assigned inside the process for immediate update
     
      -----------------------------------------------------------------
     -- Load coefficients

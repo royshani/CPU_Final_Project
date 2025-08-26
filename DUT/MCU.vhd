@@ -214,8 +214,7 @@ BEGIN
 
 			 
 			 
-	DataBus <= final_FIROUT WHEN (AddressBus(11 DOWNTO 0) = X"834" AND MemReadBus = '1')  ELSE
-			   "000000000000000000000000" & Switches		WHEN  (AddressBus(11 DOWNTO 0) = X"810" AND MemReadBus = '1')  ELSE
+	DataBus <= "000000000000000000000000" & Switches		WHEN  (AddressBus(11 DOWNTO 0) = X"810" AND MemReadBus = '1')  ELSE
 			   "0000000000000000000000000"  & IFG WHEN (AddressBus(11 DOWNTO 0) = X"841" AND MemReadBus = '1')  ELSE
 			   "0000000000000000000000000"  & IntrEn WHEN (AddressBus(11 DOWNTO 0) = X"840" AND MemReadBus = '1')  ELSE
 			   BTCNT WHEN (AddressBus(11 DOWNTO 0) = X"820" AND MemReadBus = '1')  ELSE

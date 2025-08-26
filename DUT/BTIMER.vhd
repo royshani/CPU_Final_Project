@@ -73,7 +73,7 @@ BEGIN
 		ELSIF (falling_edge(CLK)) THEN
 			IF (BTOUTEN = '0') THEN
 				PWM	<= '1';
-			ELSIF (BTCNT = BTCL0 OR BTCNT = BTCL1) THEN
+			ELSIF (BTCNT = (BTCL0-1) OR BTCNT = (BTCL1-1)) THEN
 				PWM	<= NOT PWM; -- Toggle PWM signal
 
 			END IF;

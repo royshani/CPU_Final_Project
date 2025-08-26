@@ -71,11 +71,13 @@ architecture Behavioral of FIR is
     signal y_output       : STD_LOGIC_VECTOR(31 downto 0)  := (others => '0');
     signal processing_active : STD_LOGIC := '0';
     signal x_delay : delay_line := (others => (others => '0'));
+    signal temp_sum : signed(55 downto 0) := (others => '0');
+    signal temp_mul : signed(55 downto 0) := (others => '0');
 --------------------------------------------------
     -- FIFO signals
     signal fifo_memory    : fifo_array := (others => (others => '0'));
-    signal fifo_wr_ptr    : integer range 0 to k-1 := 0;
-    signal fifo_rd_ptr    : integer range 0 to k-1 := 0;
+    signal fifo_wr_ptr    : integer range 0 to k := 0;
+    signal fifo_rd_ptr    : integer range 0 to k := 0;
     signal fifo_count_wr  : integer range 0 to k := 0;
     signal fifo_count_rd  : integer range 0 to k := 0;
     signal fifo_count     : integer range 0 to k := 0;
@@ -299,13 +301,10 @@ begin
             if FIFOREN = '1' and fifo_count > 0 then
                 x_input       <= fifo_memory(fifo_rd_ptr);
                 --fifo_memory(fifo_rd_ptr) <= (others => '0');
-                -- Read only up to index 7, don't read index 8
-                if fifo_rd_ptr = 7 then
-                    fifo_rd_ptr <= 0;  -- Reset to beginning
-                else
-                    fifo_rd_ptr <= fifo_rd_ptr + 1;  -- Increment normally
-                end if;
+                fifo_rd_ptr   <= (fifo_rd_ptr + 1) mod k;
                 fifo_count_rd <= (fifo_count_rd + 1) mod (k+1);
+
+                
             end if;
         end if;
         --IF fifo_count_rd = fifo_count_wr THEN
@@ -317,36 +316,37 @@ begin
     -- 2. FIR filter processing
     -----------------------------------------------------------------
     process(FIFOCLK, FIRRST)
-        variable temp_sum : signed(55 downto 0);
-        variable temp_mul : signed(55 downto 0);
     begin
         if FIRRST = '1' then
             x_delay <= (others => (others => '0'));
             y_output <= (others => '0');
             processing_active <= '0';
             firout_ready <= '0';
+            temp_sum <= (others => '0');
+            temp_mul <= (others => '0');
         elsif rising_edge(FIFOCLK) then
-            if FIFOREN = '1' then
+            if FIFOREN = '1' and fifo_count > 0 and (fifoempty = '0') then
                 -- shift delay line
                 for i in M-1 downto 1 loop
-                    
                     x_delay(i) <= x_delay(i-1);
                 end loop;
                 x_delay(0) <= x_input;
                 
-                -- FIR computation
-                temp_sum := (others => '0');
-                for i in 0 to M-1 loop
-                    temp_mul := signed(x_delay(i)) * signed(coefficients(i));
-                    temp_sum := temp_sum + temp_mul;
-                end loop;
+                -- FIR computation using signals
+                temp_sum <= (signed(x_delay(0)) * signed(coefficients(0))) +
+                           (signed(x_delay(1)) * signed(coefficients(1))) +
+                           (signed(x_delay(2)) * signed(coefficients(2))) +
+                           (signed(x_delay(3)) * signed(coefficients(3))) +
+                           (signed(x_delay(4)) * signed(coefficients(4))) +
+                           (signed(x_delay(5)) * signed(coefficients(5))) +
+                           (signed(x_delay(6)) * signed(coefficients(6))) +
+                           (signed(x_delay(7)) * signed(coefficients(7)));
+                
                 -- take upper 32 bits
-                y_output <= (7 downto 0 => '0') & std_logic_vector(temp_sum(55 downto 32));
-
+                y_output <= "00000000" & std_logic_vector(temp_sum(23 downto 0));
                 firout_ready <= '1';
                 processing_active <= '1';
             else
-                
                 processing_active <= '0';
                 firout_ready <= '0';
             end if;
@@ -374,7 +374,7 @@ begin
             end if;
         end process;
 
-    FIROUT <= "00000000" & y_output(23 downto 0);
+    FIROUT <= y_output;
     
      -----------------------------------------------------------------
     -- Load coefficients
@@ -387,6 +387,5 @@ begin
     coefficients(5) <= (23 downto 0 => '0') & COEF5;
     coefficients(6) <= (23 downto 0 => '0') & COEF6;
     coefficients(7) <= (23 downto 0 => '0') & COEF7;
-
        
 end Behavioral;

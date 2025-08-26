@@ -73,7 +73,7 @@ BEGIN
 		ELSIF (falling_edge(CLK)) THEN
 			IF (BTOUTEN = '0') THEN
 				PWM	<= '1';
-			ELSIF (BTCNT = BTCL0 OR BTCNT = BTCL1) THEN
+			ELSIF (BTCNT = (BTCL0-1) OR BTCNT = (BTCL1-1)) THEN
 				PWM	<= NOT PWM; -- Toggle PWM signal
 
 			END IF;
@@ -103,7 +103,7 @@ BEGIN
 	
 			ELSIF (BTHOLD = '0') THEN
 				BTCNT <= BTCNT + 1;
-				IF (BTCNT = BTCL0) THEN
+				IF (BTCNT = (BTCL0-1)) THEN
 					HEU0 <= '1';                -- single-cycle pulse
 					BTCNT <= (others => '0');   -- reset counter
 				END IF;

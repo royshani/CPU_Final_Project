@@ -54,7 +54,7 @@ inst_memory: altsyncram
 		numwords_a => 2**(MemWidth), --change this to verify for fpga and model sim
 
 		-- comment the following line out for modelsim
-		--lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
+		lpm_hint => "ENABLE_RUNTIME_MOD = YES,INSTANCE_NAME = ITCM",
 
 
 		lpm_type => "altsyncram",

@@ -300,7 +300,7 @@ begin
 
 
             -- Flags
-            if sum_var /= prev_firout then
+            if sum_var /= "00000000000000000000000000000000000000000000000000000000" then
                 firout_ready      <= '1';
                 processing_active <= '1';
             else
